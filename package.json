@@ -1,0 +1,24 @@
+{
+  "name": "genesis-library",
+  "version": "1.0.0",
+  "description": "NodeJS library for creating complex user behaviour datasets.",
+  "main": "index.js",
+  "directories": {
+    "example": "example"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/lukasotocerny/genesis-library.git"
+  },
+  "author": "Exponea",
+  "license": "MIT",
+  "dependencies": {
+    "line-by-line": "^0.1.6",
+    "lodash": "^4.17.10",
+    "randgen": "^0.1.0",
+    "request": "^2.87.0"
+  }
+}

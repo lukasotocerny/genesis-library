@@ -1,4 +1,5 @@
-var customers = require("../data/both.js");
+const path = require("path")
+const customers = require(path.join(__dirname, "../data/males.js"));
 
 /* Item catalog */
 var items = [
@@ -77,7 +78,7 @@ function createCustomer(i) {
     var capitalize = (s) => {
         return s && s[0].toUpperCase() + s.slice(1);
     }
-    const customer_raw = customers.results[i];
+    const customer_raw = customers[i];
     var attributes = {
         first_name: capitalize(customer_raw.name.first),
         last_name: capitalize(customer_raw.name.last),

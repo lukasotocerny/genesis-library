@@ -1,9 +1,8 @@
-const Genesis = require("../src/library/Genesis.js");
+const path = require("path");
+const Genesis = require(path.join(__dirname, "..", "src", "index.js"));
 const Event = Genesis.Event;
 const Session = Genesis.Session;
 const Generator = Genesis.Generator;
-const SendManager = Genesis.SendManager;
-const StoreManager = Genesis.StoreManager;
 const helpers = require("./example-helpers.js");
 
 const purchaseSession = new Session(
