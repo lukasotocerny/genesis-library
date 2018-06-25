@@ -38,20 +38,25 @@ These are the key requirements which the generator must fulfil.
         * ID of the event
     @param Dictionary $eventAttributes
         * Attributes of the event. Key is name of attribute, value is function generating the value
+    @param Dictionary $eventAttributes
+        * Attributes of the event. Key is name of attribute, value is function generating the value
     @return Array[Event]
         * Array of multiple events if it is a template, or returning a single element array
 **/
 constructor(id, eventAttributes)
 ```
-Atomic object which gets creates the customer history. `eventAttributes` is a dictionary which describes the event. It can have following specifications:
+Atomic object which gets creates the customer history. `eventAttributes` is a dictionary which describes the event., `resources` is a dictionary that handles global resources that can be used when generating event attributes. It can have following specifications:
 ```javascript
 const eventAttributes = {
     name: "eventName", /* Optional, defaults to id. Name, which will be used for output. */
     siblings: ["eventId1", "eventId2"], /* Optional, defaults to []. All events which have the same structure as this one. */
     ignore: ((session, customer, history, timestamp) => { /* do stuff */ }), /* Optional. Void function which gets initially called, does not get stored. Can modify session history.  */
-    attributeA: ((session, customer) => { return "a" }), /* Function which gets called and returns value for the particular attribute */
-    attributeB: ((session, customer) => { return "b" })  /* Same as above but for different attribute */
-}
+    attributeA: ((session, customer, resources) => { return "a" }), /* Function which gets called and returns value for the particular attribute */
+    attributeB: ((session, customer, resources) => { return resourcel.attribute1 })  /* Function that uses the resource "resource1" */
+};
+const resources = {
+    resource1: ((session, customer) => { return { attribute1: "b" } }) /* Function which gets called and returns the value for the particular resource */
+};
 ```
 Example of a declaration of an event `viewItem` which will always have attributes `item: Ear ring` and `price: 10` is illustrated by the following following code.
 ```javascript
@@ -59,6 +64,7 @@ const viewItemEarRing = new Event("viewItemEarRing", {
     name: "view item",
     item: (() => "Ear ring" ),
     price: (() => 10)
+}, {
 })
 ```
 
