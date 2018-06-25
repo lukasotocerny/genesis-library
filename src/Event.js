@@ -2,14 +2,14 @@ class Event {
     /*** constructor method 
         @param String $id 
             * ID of the event
-        @param Dictionary $resources
-            * Resources of the event. Key is name of attribute, value is function generating the value
         @param Dictionary $eventAttributes
             * Attributes of the event. Key is name of attribute, value is function generating the value
+        @param Dictionary $resources
+            * Resources of the event. Key is name of attribute, value is function generating the value
         @return Array[Event]
             * Array of multiple events if it is a template, or returning a single element array
     **/
-    constructor(id, resources, eventAttributes) {
+    constructor(id, eventAttributes, resources) {
         this.id = id;
         var events = [];
         if (eventAttributes.siblings !== undefined) {
@@ -19,7 +19,7 @@ class Event {
             delete eventAttributes["siblings"];
             /* Instantiate event for each sibling */
             siblings.forEach((sibling) => {
-                events = events.concat(new Event(sibling, resources, eventAttributes));
+                events = events.concat(new Event(sibling, eventAttributes, resources));
             })
         }
         if (eventAttributes.name !== undefined) {
