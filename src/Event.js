@@ -27,7 +27,7 @@ class Event {
         } else {
             this.name = id;
         }
-        this.resourcesContructors = resources;
+        this.resourcesConstructors = resources || {}
         this.attributesConstructors = eventAttributes;
         this.attributes = null;
         /* Returns an array of initialized events */
