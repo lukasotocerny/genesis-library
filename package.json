@@ -2,10 +2,7 @@
   "name": "genesis-library",
   "version": "1.0.0",
   "description": "NodeJS library for creating complex user behaviour datasets.",
-  "main": "index.js",
-  "directories": {
-    "example": "example"
-  },
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
