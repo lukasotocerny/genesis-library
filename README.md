@@ -1,7 +1,7 @@
-## Genesis (data generator)
+## Genesis
 
 ### Motivation
-Create a tool, which easily generates fake but realistic customer behaviour data based on custom trends you declare.
+Create a data generator, which easily generates fake but realistic customer behaviour data based on custom trends you declare.
 
 ### Use cases
 This tool is great for **onboarding** or **demos**.
