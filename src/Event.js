@@ -4,10 +4,12 @@ class Event {
             * ID of the event
         @param Dictionary $eventAttributes
             * Attributes of the event. Key is name of attribute, value is function generating the value
+        @param Dictionary $resources
+            * Resources of the event. Key is name of attribute, value is function generating the value
         @return Array[Event]
             * Array of multiple events if it is a template, or returning a single element array
     **/
-    constructor(id, eventAttributes) {
+    constructor(id, eventAttributes, resources) {
         this.id = id;
         var events = [];
         if (eventAttributes.siblings !== undefined) {
@@ -17,7 +19,7 @@ class Event {
             delete eventAttributes["siblings"];
             /* Instantiate event for each sibling */
             siblings.forEach((sibling) => {
-                events = events.concat(new Event(sibling, eventAttributes));
+                events = events.concat(new Event(sibling, eventAttributes, resources));
             })
         }
         if (eventAttributes.name !== undefined) {
@@ -25,6 +27,7 @@ class Event {
         } else {
             this.name = id;
         }
+        this.resourcesConstructors = resources || {}
         this.attributesConstructors = eventAttributes;
         this.attributes = null;
         /* Returns an array of initialized events */
@@ -44,6 +47,18 @@ class Event {
             * Returns this Event with created attributes
     **/
     initiate(session, customer, history, timestamp) {
+        /* Initiate new resources */
+        this.resources = {};
+        Object.keys(this.resourcesContructors).forEach((k) => {
+            if (this.resourcesContructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" resource function: ${ k }`);
+            if (k == "ignore") {
+                /* For security reasons include history and timestamp as parameter only in ignore attribute */
+                this.resourcesContructors[k](session, customer, history, timestamp);
+            } else {
+                this.resources[k] = this.attributesConstructors[k](session, customer);
+            }
+            return;
+        });
         /* Initiate new attributes */
         this.attributes = {};
         Object.keys(this.attributesConstructors).forEach((k) => {
@@ -54,7 +69,7 @@ class Event {
                 /* For security reasons include history and timestamp as parameter only in ignore attribute */
                 this.attributesConstructors[k](session, customer, history, timestamp);
             } else {
-                this.attributes[k] = this.attributesConstructors[k](session, customer);
+                this.attributes[k] = this.attributesConstructors[k](session, customer, resources);
             }
             return;
         });
