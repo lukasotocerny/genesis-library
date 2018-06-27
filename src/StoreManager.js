@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const fs = require('fs');
+const Storage = require("@google-cloud/storage");
 
 class StoreManager {
     /*** constructor method
@@ -24,6 +25,10 @@ class StoreManager {
     writeQueue() {
         if (this.commands.length == 0) return;
         fs.appendFileSync(this.filepath, JSON.stringify({ "commands": this.commands }) + "\n");
+        // Create a different method where instead of line above we will store to bucket
+        // const storage = new Storage();
+        // const file = storage.bucket("genesis-exports").file("testfoo");
+        // file.save(JSON.stringify({ "commands": this.commands }) + "\n")
         console.log(`Written ${this.commands.length} objects`);
         console.log("Total writes", this.total);
         this.commands = [];
