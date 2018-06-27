@@ -52,9 +52,17 @@ class Event {
                 return;
             } else if (k == "ignore") {
                 /* For security reasons include history and timestamp as parameter only in ignore attribute */
-                this.attributesConstructors[k](session, customer, history, timestamp);
+                if (typeof this.attributesConstructors[k] === "string") {
+                    eval(this.attributesConstructors[k])(session, customer, history, timestamp);
+                } else {
+                    this.attributesConstructors[k](session, customer, history, timestamp);
+                }
             } else {
-                this.attributes[k] = this.attributesConstructors[k](session, customer);
+                if (typeof this.attributesConstructors[k] === "string") {
+                    this.attributes[k] = eval(this.attributesConstructors[k])(session, customer);
+                } else {
+                    this.attributes[k] = this.attributesConstructors[k](session, customer);
+                }
             }
             return;
         });

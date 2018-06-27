@@ -1,6 +1,6 @@
 {
   "name": "genesis-library",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "NodeJS library for creating complex user behaviour datasets.",
   "main": "src/index.js",
   "scripts": {

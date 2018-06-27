@@ -24,12 +24,23 @@ class Customer {
         Object.keys(this.attributesConstructors).forEach((attr) => {
             /* Customer attribute ignore used for storing all information about customers */
             if (attr === "ignore") {
-                /* Call ignore function with index i, for iterations over customers */
-                const value = this.attributesConstructors[attr].call(this.attributes, i);
-                this.attributes[attr] = value;
+                if (typeof this.attributesConstructors[attr] === "string") {
+                    /* Call ignore function with index i, for iterations over customers */
+                    const value = this.attributesConstructors[attr].call(this.attributes, i);
+                    this.attributes[attr] = value;
+                } else {
+                    /* Call ignore function with index i, for iterations over customers */
+                    const value = eval(this.attributesConstructors[attr]).call(this.attributes, i);
+                    this.attributes[attr] = value;
+                }
             } else {
-                const value = this.attributesConstructors[attr].call(this.attributes);
-                this.attributes[attr] = value;
+                if (typeof this.attributesConstructors[attr] === "string") {
+                    const value = eval(this.attributesConstructors[attr]).call(this.attributes);
+                    this.attributes[attr] = value;
+                } else {
+                    const value = this.attributesConstructors[attr].call(this.attributes);
+                    this.attributes[attr] = value;
+                }
             }
         });
         return null;

@@ -112,7 +112,7 @@ class Generator {
             numberOfSessions++;
         }
         /* Run postSessionsFunction if exists and signal has been called */
-        if (customer.attributes.ignore.signal || this.postSessionsFunction !== undefined) {
+        if ((customer.attributes.ignore && customer.attributes.ignore.signal) || (this.postSessionsFunction !== undefined && this.postSessionsFunction !== null)) {
             this.postSessionsFunction(customer.attributes, customer.history, customer.timestamp);
         }
         return null;
