@@ -1,13 +1,12 @@
-DAY_IN_MILISECONDS = 1000*60*60*24;
+DAY_IN_MILISECONDS = 60*60*24;
 const randgen = require('randgen');
 const fs = require("fs");
-const StoreManager = require("./StoreManager.js");
-const SendManager = require("./SendManager.js");
 const Customer = require("./Customer.js");
+const ExponeaHelpers = require("./ExponeaHelpers.js")
 
 class Generator {
     /*** constructor method
-        @param Array[Session] $sessions
+        @param Array[Session] $flows
             * Set of all Session which get randomly chosen and generate Events
         @param Dictionary $options
             * Options specifying how to generate Events and Customer attributes.
@@ -15,18 +14,14 @@ class Generator {
             * Object which contains functions for creating Customer attributes
         @return null
     **/
-    constructor(sessions, customerAttributesConstructors, options) {
-        this.sessions = sessions;
-        this.customerAttributesConstructors = customerAttributesConstructors;
+    constructor(flows, customers_raw, options) {
+        this.flows = flows;
+        this.customers_raw = customers_raw;
+        this.customers = [];
         /* Required options fields */
-        if (!("startTimestamp" in options)) throw("Parameter 'startTimestamp' must be declared in options argument.")
-        this.startTimestamp = options.startTimestamp;
-        if (!("endTimestamp" in options)) throw("Parameter 'endTimestamp' must be declared in options argument.")
-        this.endTimestamp = options.endTimestamp;
-        if (!("totalCustomers" in options)) throw("Parameter 'totalCustomers' must be declared in options argument.")
-        this.totalCustomers = options.totalCustomers;
-        if (!("retention" in options)) throw("Parameter 'retention' must be declared in options argument.")
-        this.retention = options.retention;
+        this.startTimestamp = options.startTimestamp || 1524225600;
+        this.endTimestamp = options.endTimestamp || 1532088000;
+        this.retention = options.retention || [0.5, 0.4, 0.3, 0.2, 0.1];
         /* Optional options fields with defaults */
         this.sessionMean = options.sessionMean || 12;
         this.sessionStd = options.sessionStd || Math.round(DAY_IN_MILISECONDS/4);
@@ -35,11 +30,11 @@ class Generator {
         this.eventsSeparationTime = options.eventsSeparationTime || 30000;
         this.postSessionsFunction = options.postSessionsFunction || null;
         /* Calculated values */
-        this.totalDays = Math.round((options.endTimestamp - options.startTimestamp)/(1000*60*60*24));
+        this.totalDays = Math.round((this.endTimestamp - this.startTimestamp)/(60*60*24));
         /* Populate each session with eventSeparation attribute */
-        this.sessions.forEach((s) => {
+        this.flows.forEach((s) => {
             s.eventsSeparationTime = this.eventsSeparationTime;
-        })        
+        })
     }
 
     /*** calculateOffset method
@@ -55,32 +50,36 @@ class Generator {
         const timestampMinutes = timestampDate.getMinutes();
         /* Depending on whether timestamp is before or after this.sessionMean calculate the offset */
         if (timestampHours > this.sessionMean) {
-            return (timestampHours - this.sessionMean)*60*60*1000 + timestampMinutes*60*1000;
+            return (timestampHours - this.sessionMean)*60*60 + timestampMinutes*60;
         } else if (timestampHours == this.sessionMean) {
-            return timestampMinutes*60*1000;
+            return timestampMinutes*60;
         } else {
-            return -((this.sessionMean-timestampHours)*60*60*1000 + (60-timestampMinutes)*60*1000);
+            return -((this.sessionMean-timestampHours)*60*60 + (60-timestampMinutes)*60);
         }
     }
 
+    
     /*** createCustomers method
         * Creates Customers uniformly distributed across the time range.
         @return Array[Customer]
             * Array of generated Customers.
     **/
     createCustomers() {
-        let customers = [];
-        for (let i=0; i<this.totalCustomers; i++) {
+        this.customers = [];
+        for (let i=0; i < this.customers_raw.length; i++) {
             /* Generate day with uniform distribution */
-            const days = randgen.runif(0, this.totalDays, true);
+            var days = randgen.runif(0, this.totalDays, true);
             const offset = this.calculateOffset(this.startTimestamp);
             const createdTime = Math.round(randgen.rnorm(this.startTimestamp - offset + days*DAY_IN_MILISECONDS, this.sessionStd));
-            const customer = new Customer(createdTime, this.customerAttributesConstructors);
+            const customer = new Customer(
+                createdTime, 
+                this.customers_raw[i], 
+                this.customerAttributesConstructors);
             /* iterator i is included to be able to select different customers in /data/ folder */
             customer.initiate(i);
-            customers.push(customer);
+            this.customers.push(customer);
         }
-        return customers;
+        return this.customers;
     }
 
     /*** createSessions method
@@ -88,34 +87,57 @@ class Generator {
             * Customer for which generator creates sessions and stores them in Customer sessions attribute
         @return null
     **/
-    createSessions(customer) {
-        let numberOfSessions = 0;
-        /* Randomly choose a session */
-        let session = this.sessions[Math.floor(Math.random()*this.sessions.length)];
-        let sessionEvents = session.createEvents(customer.timestamp, customer.attributes);
-        customer.storeSession(sessionEvents);
-        numberOfSessions++;
+    generateCustomer(customer, numberOfDevices) {
+        let sessionDevices = [];
+
+        let numberOfSessions = 1;
+
+        numberOfDevices = numberOfDevices || 3;
+        for(var x = 0; x < numberOfDevices; x++){
+            customer.storeDevice(ExponeaHelpers.getUserDevice());
+        }
+
+        /* Randomly choose a flow */
+        let sessionStore = customer.getRandomDevice();
+        let flow = this.flows[Math.floor(Math.random()*this.flows.length)];
+        let session = {
+            requests: flow.createEvents(customer.timestamp, customer, sessionStore),
+            ids: JSON.parse(JSON.stringify(sessionStore.ids))
+        }
+        customer.storeSession(session);
+
+
         while (numberOfSessions < this.retention.length) {
+            
             /* Probabilistically calculate if another session will occur */
-            if (Math.random() > this.retention[numberOfSessions]) break;
+            if (Math.random() > this.retention[numberOfSessions - 1]) break;
+
             /* Check purchase/end signal */
-            if (customer.attributes.ignore && customer.attributes.ignore.signal) break;
+            /*if (customer.attributes.ignore && customer.attributes.ignore.signal) break;*/
+
             /* Calculate timestamp of new session */
             const days = randgen.runif(this.nextSessionDaysMin, this.nextSessionDaysMax, true);
             const offset = this.calculateOffset(customer.timestamp);
+
             /* Generate new timestamp for next session */
             customer.timestamp = Math.round(randgen.rnorm(customer.timestamp - offset + days*DAY_IN_MILISECONDS, this.sessionStd));
-            if (customer.timestamp > this.endTimestamp) break;
-            session = this.sessions[Math.floor(Math.random()*this.sessions.length)];
-            sessionEvents = session.createEvents(customer.timestamp, customer.attributes);
-            customer.storeSession(sessionEvents);
+            //if (customer.timestamp > this.endTimestamp) break;
+
+            sessionStore = customer.getRandomDevice();
+            let flow = this.flows[Math.floor(Math.random()*this.flows.length)];
+            let session = {
+                requests: flow.createEvents(customer.timestamp, customer, sessionStore),
+                ids: JSON.parse(JSON.stringify(sessionStore.ids))
+            }
+            customer.storeSession(session);
+
             numberOfSessions++;
         }
         /* Run postSessionsFunction if exists and signal has been called */
         if ((customer.attributes.ignore && customer.attributes.ignore.signal) || (this.postSessionsFunction !== undefined && this.postSessionsFunction !== null)) {
             this.postSessionsFunction(customer.attributes, customer.history, customer.timestamp);
         }
-        return null;
+        return;
     }
 
     /*** storeCommands method
@@ -128,34 +150,7 @@ class Generator {
         @return Promise
             * Asynchronous Promise for huge data writing.
     **/
-    storeCommands(customers, projectIds, filePathInitial) {
-        const filepath = filePathInitial || "../data/data-export.json";
-        /* Create new file or truncate already existing file. */
-        var fd = fs.openSync(filepath, 'w');
-        /* Return a Promise */
-        return new Promise(function(resolve, reject) {
-            projectIds.forEach((id) => {
-                if (id.length != 36) reject(`Project ID ${ id } has incorrect form.`);
-            })
-            var storeManager = new StoreManager(projectIds, filepath);
-            customers.map((customer) => {
-                storeManager.storeBulkApi(customer);
-            });
-            storeManager.writeQueue();
-            resolve(true);
-        })
-    }
 
-    /*** sendCommands method
-        * Sends all Exponea Bulk API commnads (generated by storeCommands method) from file to Exponea API.
-        @param String $filepath
-            * Filepath where all commands (result of storeCommands method) are stored.
-        @return Promise
-    **/
-    sendCommands(filepath) {
-        const sendManager = new SendManager(filepath);
-        return sendManager.sendAll();
-    }
 }
 
 module.exports = Generator;

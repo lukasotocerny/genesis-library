@@ -1,15 +1,19 @@
+const Flow = require("./Flow.js");
+const Node = require("./Node.js");
 const Event = require("./Event.js");
-const Session = require("./Session.js");
+const Condition = require("./Condition.js");
+const Action = require("./Action.js");
+const CustomerUpdate = require("./CustomerUpdate.js")
 const Generator = require("./Generator.js");
 const Customer = require("./Customer.js");
-const SendManager = require("./SendManager.js");
-const StoreManager = require("./StoreManager.js");
 
 module.exports = {
+    Flow: Flow,
+    Node: Node,
     Event: Event,
-    Session: Session,
+    Condition: Condition,
+    Action: Action,
+    CustomerUpdate: CustomerUpdate,
     Generator: Generator,
     Customer: Customer,
-    SendManager: SendManager,
-    StoreManager: StoreManager
 }

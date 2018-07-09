@@ -95,6 +95,7 @@ class Session {
     createEvents(timestampInitial, customerAttributes) {
         /* Initiate Session state */
         let history = [];
+        let requests = [];
         let sessionStore = {};
         let timestamp = timestampInitial;
         let currentEvent = this.startEvent.initiate(sessionStore, customerAttributes, history, timestamp);
@@ -103,12 +104,13 @@ class Session {
 //        console.log(nextEvent)
         /* Iterate until Events are generated */
         while (nextEvent !== null) {
-            history.push(nextEvent.toExponeaJson());
+            history.push(nextEvent.toArchive());
+            requests.push(nextEvent.toExponeaJson());
             currentEvent = nextEvent;
             timestamp += Math.round(this.eventsSeparationTime * Math.random());
             nextEvent = this.nextEvent(sessionStore, customerAttributes, history, timestamp, currentEvent)
         }
-        return history;
+        return requests;
     }
 }
 

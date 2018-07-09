@@ -6,12 +6,14 @@ class Customer {
             * Keys with attribute names and values are functions generating the attribute values.
         @return null
     **/
-    constructor(created, attributesConstructors) {
+    constructor(created, attributes, attributesConstructors) {
         this.created_at = created;
         this.timestamp = created;
-        this.attributes = {};
-        this.attributesConstructors = attributesConstructors;
+        this.ids = {};
+        this.attributes = attributes;
+        this.attributesConstructors = attributesConstructors || [];
         this.sessions = [];
+        this.devices = [];
         return null;
     }
     
@@ -55,6 +57,16 @@ class Customer {
     storeSession(session) {
         this.sessions.push(session);
         return null;
+    }
+
+    storeDevice(device) {
+        this.devices.push(device);
+        return null;
+    }
+
+    getRandomDevice() {
+        if(this.devices.length > 0) return this.devices[Math.floor(Math.random() * this.devices.length)];
+        return {};
     }
 }
 
