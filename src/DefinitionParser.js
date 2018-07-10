@@ -45,7 +45,7 @@ var translateJinja = function(definition){
  * @param String type
  * @param Dictionary config 
  */
-var parseDefinition = function(definition, type, {session, customer, history, timestamp, catalog, resources}) {
+export default function parseDefinition(definition, type, {session, customer, history, timestamp, catalog, resources}) {
     // Create a new instance of Aggregates
     const aggregate = new Aggregate(history);
 
