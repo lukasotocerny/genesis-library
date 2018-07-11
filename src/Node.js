@@ -1,31 +1,31 @@
 export default class Node {
-    /*** constructor method
+	/*** constructor method
         @param String $id
             * ID of the Node
         @param Array $params
             * Array of parameters specific to subclasses
         @return null
     **/
-    constructor(id, ...params) {
-        this.id = id;
-    }
+	constructor(id, ...params) {
+		this.id = id;
+	}
 
-    /*** isEqual method
+	/*** isEqual method
         @param Node $node
             * Node with which this instance is compared with
         @return Boolean
             * Telling whether Node is same a this instance
     **/
-    isEqual(node) {
-        if (typeof(node) == "string" || node instanceof String) {
-            return this.id === node;
-        } else if (node instanceof Node) {
-            return this.id === node.id;
-        }
-        return false;
-    }
+	isEqual(node) {
+		if (typeof(node) == "string" || node instanceof String) {
+			return this.id === node;
+		} else if (node instanceof Node) {
+			return this.id === node.id;
+		}
+		return false;
+	}
 
-    /*** createConfig method
+	/*** createConfig method
         * Deep copies object not to be overriden
         @param Session $session
             * Session of this Node
@@ -41,15 +41,15 @@ export default class Node {
             * Resources specific to this Event
         @return Dictionary
     **/
-    createContext(session, customer, history, timestamp, catalog, resources) {
-        /* TODO: Deep copy object for security due to immutability */
-        return {
-            session: session,
-            customer: customer,
-            history: history,
-            timestamp: timestamp,
-            catalog: catalog,
-            resources: resources
-        }
-    }
+	static createContext(session, customer, history, timestamp, catalog, resources) {
+		/* TODO: Deep copy object for security due to immutability */
+		return {
+			session: session || {},
+			customer: customer || {},
+			history: history || {},
+			timestamp: timestamp || {},
+			catalog: catalog || {},
+			resources: resources || {}
+		}
+	}
 }

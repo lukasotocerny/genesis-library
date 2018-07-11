@@ -198,3 +198,98 @@ Method returns `Promise`.
 sendCommands(filepath)
 ```
 Method does not take any parameters and uses the filepath provided (or used by default). This method asynchronously sends the requests to Exponea API.
+
+## Definition
+```json
+{
+    "settings": {
+        "startTimestamp": 1514764800, // Start time for generation
+        "endTimestamp": 1530403200, // End time for generation
+        "retention": [0.6, 0.3, 0.3], // Probability of customer having another session
+        "sessionMean": 12, // Mean around which events are normally distributed throughout the day
+        "nextSessionDaysMin": 5, // Minimum amount of days to another session
+        "nextSessionDaysMax": 20, // Maximum amount of days to another session
+        "eventsSeparationTime": 3000 // Maximal time betweeen events
+    },
+    "flow": {
+        "startNode": "1", // ID of the starting node
+        "endNode": "2", // ID of the ending node
+        "nodes": [ // Array of nodes
+            {
+                "id": "1", // ID of node
+                "type": "action", // Type of node
+                "attributes": {
+                    "definition": "session.id = 42; session.cart = [{id: 1},{id: 2},{id: 3}];" // JavaScript code to execute
+                }
+            },
+            {
+                "id": "2",
+                "type": "condition",
+                "attributes": {
+                    "definition": "{{ session.id == 42 }}" // JavaScript code returing a boolean
+                }
+            },
+            {
+                "id": "3",
+                "type": "customer",
+                "attributes": {
+                    "attributesDefinitions": { // Attributes to update
+                        "session_id": "{{ session.id }}",
+                        "name": "{{ customer.attributes.name }}"
+                    },
+                    "idsDefinitions": { // IDs to update
+                        "registered": "{{ customer.attributes.email }}"
+                    }
+                }
+            },
+            {
+                "id": "4",
+                "type": "event",
+                "attributes": {
+                    "name": "view_item", // Name of an Event
+                    "resourcesDefinitions": { // Custom resources with each value returning string
+                        "catalog": "{{ catalog }}",
+                        "sale_name": "Black Friday Sale!",
+                        "discounts": "{ 'student': 50, 'child': 60, 'adult': 0 }"
+                    },
+                    "attributesDefinitions": { // Customer attributes with each value returning string
+                        "item_id": "{{ resources.iterator.id }}"
+                    },
+                    "pageVisit": {
+                        "enabled": true, // Boolean, by default false
+                        "attributesDefinitions": {
+                            "url": "shop.com/product?id={{ resources.iterator.id }}", // Custom attributes for this event
+                            "referrer": "{{ session.referrer }}",
+                            "browser": "{{ session.browser ",
+                            "device": "{{ session.device }}",
+                            "os": "{{ session.os }}"
+                        }
+                    },
+                    "repetition": {
+                        "type": "iterative", // iterative, single or repetition
+                        "attributes": {
+                            "iteratorDefinition": "{{ session.cart | safe }}"
+                        }
+                    }
+                }
+            }
+        ],
+        "transitions": [
+            {
+                "id": "1", // ID of the transition
+                "src": "1", // ID of source node
+                "dest": "2", // ID of destination node
+                "attributes": {
+                    "prob": 0.5 // Probability of this transition
+                }
+            }
+        ]
+    },
+    "customers": [
+        {}
+    ],
+    "catalog": [
+        {}
+    ]
+}
+```

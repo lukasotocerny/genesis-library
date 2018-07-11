@@ -29,7 +29,7 @@ export default class Condition extends Node {
         @return null
     **/
     validate(session, customer, history, timestamp, catalog) {
-        const context = super.createContext(session, customer, history, timestamp, catalog);
+        const context = Node.createContext(session, customer, history, timestamp, catalog);
         const output = DefinitionParser(this.definitionConstructor, "string", context);
         if (output == true || output == "true") return true;
         return false;

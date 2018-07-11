@@ -1,20 +1,20 @@
 import Node from "./Node.js";
 import SafeEval from "./SafeEval.js";
 
-export class Action extends Node {
-    /*** constructor method
+export default class Action extends Node {
+	/*** constructor method
         @param String $id
             * ID of the Node
         @param String $definition
             * JavaScript string that gets executed
         @return null
     **/
-    constructor(id, definition) {
-        super(id);
-        this.definition = definition;
-    }
+	constructor(id, definition) {
+		super(id);
+		this.definition = definition;
+	}
 
-    /*** execute method
+	/*** execute method
         @param Session $session
             * Session in which to execute this Action
         @param Customer $customer
@@ -27,9 +27,9 @@ export class Action extends Node {
             * Array of items from the Catalog, which is shared in the Generation
         @return null
     **/
-    execute(session, customer, history, timestamp, catalog) {
-        const context = super.createContext(session, customer, history, timestamp, catalog);
-        SafeEval(this.definition, context);
-        return null;
-    }
+	execute(session, customer, history, timestamp, catalog) {
+		const context = Node.createContext(session, customer, history, timestamp, catalog);
+		SafeEval(this.definition, context);
+		return null;
+	}
 }

@@ -22,7 +22,7 @@
             "double"
         ],
         "semi": [
-            "error",
+            "warn",
             "always"
         ],
         "camelcase": [
@@ -30,6 +30,7 @@
             {"properties": "always"}
         ],
         "no-unused-vars": "warn",
-        "no-undef": "off"
+        "no-undef": "off",
+        "no-console": "off"
     }
 }

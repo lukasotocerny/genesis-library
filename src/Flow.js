@@ -1,161 +1,153 @@
-const Node = require("./Node.js");
-const Event = require("./Event.js");
-const Condition = require("./Condition.js");
-const Action = require("./Action.js");
-const DefinitionParser = require("./DefinitionParser.js");
-const ExponeaHelpers = require("./ExponeaHelpers.js");
+import Node from "./Node.js";
+import Event from "./Event.js";
+import Condition from "./Condition.js";
+import Action from "./Action.js";
+import CustomerUpdate from "./CustomerUpdate.js";
+import DefinitionParser from "./DefinitionParser.js";
+import Transition from "./Transition.js";
 
-class Flow {
-    /*** constructor method
-        @param String $name
-            * Name of the Flow
-        @param String $start
-            * ID of the Event which this Flow will start with
-        @param String $exit
-            * ID of the Event which this Flow will end with
-        @param Array[Node] $nodes
-            * Array of Nodes, which is the set of all Nodes for this Flow
-        @param Array[Transition] $transitions
-            * Array of Transitions, which is the set of all Transitions for this Flow
-        @param Array[dictionary] $catalog
-            * Catalog object
+export default class Flow {
+	/*** constructor method
+        @param Dictionary $definition
+            * Definition describing Flow
         @return null
     **/
-    constructor(name, start, exit, nodes, transitions, catalog) {
-        this.name = name;
-        this.nodes = [].concat(...nodes);
-        this.transitions = transitions;
-        this.eventsSeparationTime = 30000;
-        this.catalog = catalog;
-        this.startEvent = this.nodes.filter((e) => e.id === start)[0];
-        if (this.startEvent === undefined) throw(`Start event "${start}" is not in this Session events.`);
-        this.exitEvent = this.nodes.filter((e) => e.id === exit)[0];
-        if (this.exitEvent === undefined) throw(`Exit event "${exit}" is not in this Session events.`);
-        /* Adds transitions to exit state if probabilities do not add up to 1 */
-        this.validateTransitions();
-        return null;
-    }
+	constructor(definition) {
+		this.name = definition.name || "Unnamed flow";
+		/* Instantiate nodes from definition */
+		this.nodes = [];
+		definition.nodes.forEach((def) => {
+			let node;
+			if (def.type === "action") {
+				node = new Action(def.id, def.attributes.definition);
+			} else if (def.type === "condition") {
+				node = new Condition(def.id, def.attributes.definition);
+			} else if (def.type === "customer_update") {
+				node = new CustomerUpdate(def.id, def.attributes.idsDefinitions, def.attributes.attributesDefinitions);
+			} else if (def.type === "event") {
+				const attr = def.attributes;
+				node = new Event(def.id, attr.name, attr.attributesDefinitions, attr.resourcesDefinitions, attr.repetition, attr.pageVisit);
+			} else {
+				throw(`Unknown type of Node ${def.type}`);
+			}
+			this.nodes.push(node);
+		});
+		/* Instantiate transitions from definition */
+		this.transitions = [];
+		definition.transitions.forEach((def) => {
+			this.transitions.push(new Transition(def.id, def.source, def.destination, def.probability));
+		});
+		this.catalog = definition.catalog;
+		this.startNode = this.nodes.filter((node) => node.isEqual(definition.startNode))[0];
+		if (!!this.startNode === false) throw(`Start event "${start}" is not in this Session events.`);
+		this.exitNode = this.nodes.filter((node) => node.isEqual(definition.exitNode))[0];
+		if (!!this.exitNode === false) throw(`Exit event "${exit}" is not in this Session events.`);
+		/* Adds transitions to exitNode if probabilities do not add up to 1 */
+		this.validateTransitions();
+		return null;
+	}
 
-    /*** validateSessionTransitions method
-        * Checks if probabilities of Transitions from an Event add up to 1, and adds Transition to exitEvent if not.
+	/*** validateSessionTransitions method
+        * Checks if probabilities of Transitions from an Event add up to 1, and adds Transition to exitNode if not.
         @return null
     **/
-    validateTransitions() {
-            this.nodes.forEach((node) => {
-                /* exitEvent does not have any transitions */
-                if (node.type == "event" && node.isEqual(this.exitEvent)) return;
-                
-                /* Sum all probabilities from an Event */
-                if(node.type == "condition"){
-
-                    // Evaluate True conditional nodes
-                    const true_transitions = this.transitions.filter((t) => (node.isEqual(t.from) && !t.conditional));
-                    const true_totalProbability = true_transitions.reduce((sum, transition) => sum + transition.probability, 0);
-                    if (true_totalProbability !== 1) {
-                        this.transitions.push({
-                            from: node.id, to: this.exitEvent.id, probability: 1 - true_totalProbability, conditional: false
-                        });
-                    }
-
-                    // Evaluate False conditional nodes
-                    const false_transitions = this.transitions.filter((t) => (node.isEqual(t.from) && t.conditional));
-                    const false_totalProbability = false_transitions.reduce((sum, transition) => sum + transition.probability, 0);
-                    if (false_totalProbability !== 1) {
-                        this.transitions.push({
-                            from: node.id, to: this.exitEvent.id, probability: 1 - false_totalProbability, conditional: true
-                        });
-                    }
-
-                } else {
-                    // Evaluate transitions
-                    const transitions = this.transitions.filter((t) => (node.isEqual(t.from)));
-                    const totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
-                    if (totalProbability !== 1) {
-                        this.transitions.push({
-                            from: node.id, to: this.exitEvent.id, probability: 1 - totalProbability
-                        });
-                    }
-                }
-            })
-        return null;
-    }
+	validateTransitions() {
+		this.nodes.forEach((node) => {
+			/* exitNode does not have any transitions */
+			if (node.isEqual(this.exitNode)) return;
+			if (node instanceof Condition) {
+				let transitions, totalProbability;
+				// Evaluate True conditional nodes
+				transitions = this.transitions.filter((t) => (node.isEqual(t.source)) && t.trueSourceCondition());
+				totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
+				if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
+				// Evaluate False conditional nodes
+				transitions = this.transitions.filter((t) => (node.isEqual(t.source)) && !t.trueSourceCondition());
+				totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
+				if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
+			}
+			const transitions = this.transitions.filter((t) => (node.isEqual(t.source)));
+			const totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
+			if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
+		});
+		console.log(this.transitions);
+		return null;
+	}
     
-    /*** nextEvent method
+	/*** nextEvent method
         * Looks for next legal Event and returns it.
         @return Event|null
-            * Returns next Event if there is one, or null if exitEvent has been reached.
+            * Returns next Event if there is one, or null if exitNode has been reached.
     **/
-    nextNode(sessionStore, customerAttributes, history, timestamp, currentNode, conditionResult) {
-        if(currentNode.isEqual(this.exitEvent)) return null;
-        // Evaluate Event and Action nodes with signle transitions output
-        if(currentNode.type == "event"  || currentNode.type == "action" || currentNode.type == "customer_update"){
-            let sum = 0, nextNode = null, nextNodeId = "";
-            const roll = Math.random();
-            /* Get all Transitions from currentEvent */
-            let transitions = this.transitions.filter((t) => {
-                return currentNode.isEqual(t.from);
-            });
-            for (let i=0; i < transitions.length; i++) {
-                if (sum <= roll && roll < sum + transitions[i].probability) {
-                    nextNode = this.nodes.filter((s) => s.isEqual(transitions[i].to))[0];
-                    nextNodeId = transitions[i].to;
-                    break;
-                }
-                sum += transitions[i].probability;
-            }
-            if (nextNode === null) {
-                nextNode = this.exitEvent;
-                nextNodeId = this.exitEvent.id;
-            }
-            /* Check if Event is in Session events, in case user has forgotten to declare it */
-            if (nextNode === undefined) throw(`Undefined NODE "${ nextNodeId }".`)
-            /* Return initiated Event or null if exitEvent has been reached */
-            /*if (nextNode.isEqual(this.exitEvent)) {
-                return null;
-            }*/
-            return nextNode;
+	nextNode(currentNode, context) {
+		if (currentNode.isEqual(this.exitNode)) return null;
+		/* Evaluate Condition nodes with conditional transitions */
+		if (currentNode instanceof Condition) {
+			let sum = 0, nextNode = null, nextNodeId = "";
+			const roll = Math.random();
+			/* Get all Transitions from currentNode */
+			let transitions = [];
+			if (context.result === true) {
+				transitions = this.transitions.filter((t) => {
+					return currentNode.isEqual(t.source) && t.trueSourceCondition();
+				});
+			} else {
+				transitions = this.transitions.filter((t) => {
+					return currentNode.isEqual(t.source) && !t.trueSourceCondition();
+				});
+			}
+			/* Delete the result */
+			context.result = null;
+			for (let i=0; i < transitions.length; i++) {
+				if (sum <= roll && roll < sum + transitions[i].probability) {
+					nextNode = this.nodes.filter((s) => s.isEqual(transitions[i].destination))[0];
+					nextNodeId = transitions[i].destination;
+					break;
+				}
+				sum += transitions[i].probability;
+			}
+			if (nextNode === null) {
+				nextNode = this.exitNode;
+				nextNodeId = this.exitNode.id;
+			}
+			/* Check if Event is in Session events, in case user has forgotten to declare it */
+			if (nextNode === undefined) throw(`Undefined EVENT "${ nextNodeId }".`);
+			/* Return initiated Event or null if exitNode has been reached */
+			if (nextNode.isEqual(this.exitNode)) {
+				return null;
+			}
+			return nextNode;
+		/* Evaluate Event and Action nodes with single transitions output */
+		} else {
+			let sum = 0, nextNode = null, nextNodeId = "";
+			const roll = Math.random();
+			/* Get all Transitions from currentEvent */
+			let transitions = this.transitions.filter((t) => {
+				return currentNode.isEqual(t.source);
+			});
+			for (let i=0; i < transitions.length; i++) {
+				if (sum <= roll && roll < sum + transitions[i].probability) {
+					nextNode = this.nodes.filter((s) => s.isEqual(transitions[i].destination))[0];
+					nextNodeId = transitions[i].destination;
+					break;
+				}
+				sum += transitions[i].probability;
+			}
+			if (nextNode === null) {
+				nextNode = this.exitNode;
+				nextNodeId = this.exitNode.id;
+			}
+			/* Check if Event is in Session events, in case user has forgotten to declare it */
+			if (nextNode === undefined) throw(`Undefined NODE "${ nextNodeId }".`);
+			/* Return initiated Event or null if exitNode has been reached */
+			if (nextNode.isEqual(this.exitNode)) {
+				return null;
+			}
+			return nextNode;
+		}
+	}
 
-
-        // Evaluate Condition nodes with conditional transitions
-        } else if (currentNode.type == "condition"){
-            let sum = 0, nextNode = null, nextNodeId = "";
-            const roll = Math.random();
-            /* Get all Transitions from currentEvent */
-            let transitions = [];
-            if(conditionResult) {
-                transitions = this.transitions.filter((t) => {
-                    return currentNode.isEqual(t.from) && !t.conditional;
-                });
-            } else {
-                transitions = this.transitions.filter((t) => {
-                    return currentNode.isEqual(t.from) && t.conditional;
-                });
-            }
-            for (let i=0; i < transitions.length; i++) {
-                if (sum <= roll && roll < sum + transitions[i].probability) {
-                    nextNode = this.nodes.filter((s) => s.isEqual(transitions[i].to))[0];
-                    nextNodeId = transitions[i].to;
-                    break;
-                }
-                sum += transitions[i].probability;
-            }
-            if (nextNode === null) {
-                nextNode = this.exitEvent;
-                nextNodeId = this.exitEvent.id;
-            }
-            /* Check if Event is in Session events, in case user has forgotten to declare it */
-            if (nextNode === undefined) throw(`Undefined EVENT "${ nextNodeId }".`)
-            /* Return initiated Event or null if exitEvent has been reached */
-            if (nextNode.isEqual(this.exitEvent)) {
-                return null;
-            }
-            return nextNode;
-        }
-
-        return null;
-    }
-
-    /*** createSession method
+	/*** createSession method
         * Generates Events based on the probabilistic model of this Session and returns array containing those
         @param Integer $timestamp
             * Timestamp at which this Session will start
@@ -164,118 +156,55 @@ class Flow {
         @return Array[Event]
             * An array containing Events generated for this Session.
     **/
-    createEvents(timestampInitial, customer, sessionStore) {
-        /* Initiate Session state */
-        var history = [];
-        var requests = [];
-        if(!sessionStore) sessionStore = {};
-        var customerAttributes = customer.attributes;
-
-        
-        // Save used cookie for customer
-        if(Object.keys(sessionStore).length === 0){
-            // Is this the first session?
-            if(!customer.ids.cookie){
-                customer.ids.cookie = [sessionStore.ids.cookie];
-            } else {
-                customer.ids.cookie.push(sessionStore.ids.cookie);
-            }
-        }
-
-        // Get the referrer
-        sessionStore.referrer = ExponeaHelpers.getSource();
-
-        var timestamp = timestampInitial;
-    
-        var currentNode = null;
-        var nextNode = this.startEvent;
-    
-        while(nextNode !== null) {
-            // Evaluate Event
-            if(nextNode.type == "event") {
-                var event = nextNode.event;
-                
-                // Check if event is iterative
-                if(event.iterator.enabled){
-
-                    // Parse iterator list
-                    var config = {
-                        session: sessionStore,
-                        customer: customerAttributes,
-                        history: history,
-                        timestamp: timestamp,
-                        catalog: this.catalog,
-                        resources: {}                        
-                    }
-                    var iteratorList = DefinitionParser(event.iterator.iteratorDefinition, "JSON", config);
-                    
-                    // Generate event for each item from list
-                    for(var x in iteratorList){
-                        // Select Iterator
-                        var iterator = iteratorList[x];
-
-                        // Initiate event attributes
-                        event.initiate(sessionStore, customerAttributes, history, timestamp, this.catalog, iterator);
-
-                        // Save the event to history and requests
-                        history.push(event.toArchive());
-                        requests.push(event.getExponeaEventRequest());
-
-                        // Evaluate Page_visit settings
-                        if(event.pageVisit.enabled){
-                            requests.push(event.getExponeaPageVisitRequest());
-                        }
-
-                        // Find next node
-                        timestamp += Math.round(this.eventsSeparationTime * Math.random());
-                    }
-
-                    currentNode = nextNode;
-                    nextNode = this.nextNode(sessionStore, customerAttributes, history, timestamp, currentNode);
-                
-                // Single or repetitive events
-                } else {
-                    // Initiate event attributes
-                    event.initiate(sessionStore, customerAttributes, history, timestamp, this.catalog);
-                    
-                    // Save the event to history and requests
-                    history.push(event.toArchive());
-                    requests.push(event.getExponeaEventRequest());
-
-                    // Evaluate Page_visit settings
-                    if(event.pageVisit.enabled){
-                        requests.push(event.getExponeaPageVisitRequest());
-                    }
-
-                    // Find next node
-                    timestamp += Math.round(this.eventsSeparationTime * Math.random());
-                    currentNode = nextNode;
-                    nextNode = this.nextNode(sessionStore, customerAttributes, history, timestamp, currentNode);
-                }
-                
-            // Evaluate action nodes
-            } else if (nextNode.type == "action") {
-                // Perform action
-                var context = nextNode.action.execute(sessionStore, customerAttributes, timestamp, this.catalog)
-                customerAttributes = context.customer;
-                currentNode = nextNode;
-                nextNode = this.nextNode(sessionStore, customerAttributes, history, timestamp, currentNode);
-            } else if (nextNode.type == "condition") {
-                var result = nextNode.condition.validate(sessionStore, customerAttributes, history, timestamp, this.catalog);
-                currentNode = nextNode;
-                nextNode = this.nextNode(sessionStore, customerAttributes, history, timestamp, currentNode, result);
-            } else if (nextNode.type == "customer_update"){
-                var result = nextNode.customer_update.apply(sessionStore, customer, history, timestamp, this.catalog);
-                requests.push(nextNode.customer_update.getExponeaUpdateRequest());
-                currentNode = nextNode;
-                nextNode = this.nextNode(sessionStore, customerAttributes, history, timestamp, currentNode);
-            } else {
-                nextNode = null;
-            }
-            
-        }
-        return requests;
-    }
+	createEvents(timestampInitial, customer) {
+		const context = Node.createContext({}, customer.attributes, [], timestampInitial, this.catalog);
+		let currentNode = null;
+		let nextNode = this.startNode;
+		while (nextNode !== null) {
+			if (nextNode instanceof Event) {
+				const eventClass = nextNode;              
+				if (eventClass.repetition.enabled) {
+					const repetitionList = DefinitionParser(eventClass.repetition.repetitionDefinition, context);
+					for (item of repetitionList) {
+						context.resources.iterator = item;
+						const event = eventClass.create(context);
+						if (eventClass.pageVisit.enabled === true) {
+							context.history.extend(...event);
+						} else {
+							context.history.push(event);
+						}
+						context.timestamp += Math.round(this.eventsSeparationTime * Math.random());
+					}
+					currentNode = nextNode;
+					nextNode = this.nextNode(currentNode);
+				} else {
+					const event = eventClass.create(context);
+					if (eventClass.pageVisit.enabled === true) {
+						context.history.push(...event);
+					} else {
+						context.history.push(event);
+					}
+					context.timestamp += Math.round(this.eventsSeparationTime * Math.random());
+					currentNode = nextNode;
+					nextNode = this.nextNode(currentNode);
+				}
+			} else if (nextNode instanceof Action) {
+				nextNode.execute(context);
+				currentNode = nextNode;
+				nextNode = this.nextNode(currentNode);
+			} else if (nextNode instanceof Condition) {
+				context.result = nextNode.validate(context);
+				currentNode = nextNode;
+				nextNode = this.nextNode(currentNode, result);
+			} else if (nextNode instanceof CustomerUpdate) {
+				const customerUpdate = nextNode.apply(context);
+				context.history.push(customerUpdate);
+				currentNode = nextNode;
+				nextNode = this.nextNode(currentNode);
+			} else {
+				throw(`Node ${nextNode.name} is of incorrect class.`);
+			}
+		}
+		return context.history;
+	}
 }
-
-module.exports = Flow;
