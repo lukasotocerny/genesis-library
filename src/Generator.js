@@ -103,7 +103,7 @@ export default class Generator {
 			customer.timestamp = Math.round(randgen.rnorm(customer.timestamp - offset + days*DAY_IN_MILISECONDS, this.sessionStd));
 			if (customer.timestamp > this.endTimestamp) break;
 			flow = this.flows[Math.floor(Math.random()*this.flows.length)];
-			sessionEvents = flow.createEvents(customer.timestamp, customer.attributes);
+			sessionEvents = flow.createEvents(customer.timestamp, customer);
 			customer.storeSession(sessionEvents);
 			numberOfSessions++;
 		}

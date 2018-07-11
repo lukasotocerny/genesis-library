@@ -23,9 +23,9 @@ export default class Event extends Node {
 		this.resourcesContructors = resources || {};
 		this.attributesConstructors = eventAttributes || {};
 		/* Setup repetition configuration */
-		if (!!repetition === true && repetition.enabled === undefined) {
+		if (repetition && repetition.enabled === undefined) {
 			throw(`Event ${name} repetition.enabled must be defined.`);
-		} else if (!!repetition === true && (!!repetition.enabled === false || repetition.enabled === "false")) {
+		} else if (!!repetition === false || !!repetition.enabled === false || repetition.enabled === "false") {
 			this.repetition = {
 				enabled: false
 			};
@@ -33,9 +33,9 @@ export default class Event extends Node {
 			this.repetition = repetition;
 		}
 		/* Setup pageVisit configuration */
-		if (!!pageVisit === true && pageVisit.enabled === undefined) {
+		if (pageVisit && pageVisit.enabled === undefined) {
 			throw(`Event ${name} pageVisit.enabled must be defined.`);
-		} else if (!!pageVisit === true && (!!pageVisit.enabled === false || pageVisit.enabled === "false")) {
+		} else if (!!pageVisit === false || !!pageVisit.enabled === false || pageVisit.enabled === "false") {
 			this.pageVisit = {
 				enabled: false
 			};

@@ -35,7 +35,7 @@ export default class Flow {
 		/* Instantiate transitions from definition */
 		this.transitions = [];
 		definition.transitions.forEach((def) => {
-			this.transitions.push(new Transition(def.id, def.source, def.destination, def.probability));
+			this.transitions.push(new Transition(def.source, def.destination, def.probability));
 		});
 		this.catalog = definition.catalog;
 		this.startNode = this.nodes.filter((node) => node.isEqual(definition.startNode))[0];
@@ -70,7 +70,6 @@ export default class Flow {
 			const totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
 			if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
 		});
-		console.log(this.transitions);
 		return null;
 	}
     
@@ -112,10 +111,6 @@ export default class Flow {
 			}
 			/* Check if Event is in Session events, in case user has forgotten to declare it */
 			if (nextNode === undefined) throw(`Undefined EVENT "${ nextNodeId }".`);
-			/* Return initiated Event or null if exitNode has been reached */
-			if (nextNode.isEqual(this.exitNode)) {
-				return null;
-			}
 			return nextNode;
 		/* Evaluate Event and Action nodes with single transitions output */
 		} else {
@@ -139,10 +134,6 @@ export default class Flow {
 			}
 			/* Check if Event is in Session events, in case user has forgotten to declare it */
 			if (nextNode === undefined) throw(`Undefined NODE "${ nextNodeId }".`);
-			/* Return initiated Event or null if exitNode has been reached */
-			if (nextNode.isEqual(this.exitNode)) {
-				return null;
-			}
 			return nextNode;
 		}
 	}
