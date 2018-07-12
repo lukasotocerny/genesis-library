@@ -16,11 +16,11 @@ export default class Transition {
 		this.option = option;
 	}
 	
-	/** trueSourceNode method
+	/** trueSourceCondition method
 		* Method for recognizing whether Transition comes from true part of Condition node
 		@return Boolean
 	 */
-	trueSourceNode() {
+	trueSourceCondition() {
 		return this.option === "true" || this.option === true;
 	}
 }

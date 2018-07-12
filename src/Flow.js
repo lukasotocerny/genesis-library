@@ -46,6 +46,10 @@ export default class Flow {
 		if (!!this.exitNode === false) throw(`exitNode "${definition.exitNode}" is not defined in Flow ${this.name} nodes.`);
 		/* Adds transitions to exitNode if probabilities do not add up to 1 */
 		this.validateTransitions();
+		/* Catalog is set by the generator during runtime */
+		this.catalog = null;
+		/* eventsSeparationTime is se by the generator during runtime */
+		this.eventsSeparationTime = null;
 		return null;
 	}
 
@@ -154,6 +158,8 @@ export default class Flow {
 		let currentNode = null;
 		let nextNode = this.startNode;
 		while (nextNode !== null) {
+			/* Empty resources for new Node, since they have only scope of their own Node */
+			context.resources = {};
 			if (nextNode instanceof Event) {
 				const eventClass = nextNode;              
 				if (eventClass.repetition.enabled) {
@@ -188,7 +194,7 @@ export default class Flow {
 			} else if (nextNode instanceof Condition) {
 				context.result = nextNode.validate(context);
 				currentNode = nextNode;
-				nextNode = this.nextNode(currentNode, result);
+				nextNode = this.nextNode(currentNode, context.result);
 			} else if (nextNode instanceof CustomerUpdate) {
 				const customerUpdate = nextNode.apply(context);
 				context.history.push(customerUpdate);

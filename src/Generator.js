@@ -35,6 +35,7 @@ export default class Generator {
 		definition.flows.forEach((flowDefinition) => {
 			const flow = new Flow(flowDefinition);
 			flow.eventsSeparationTime = this.eventsSeparationTime;
+			flow.catalog = this.catalog;
 			this.flows.push(flow);
 		});
 	}

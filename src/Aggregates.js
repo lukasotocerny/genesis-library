@@ -1,54 +1,53 @@
 export default class Aggregate {
-	constructor(history) {
-		this.history = history;
-	}
-
-	/*** FIRST method
+	/*** first method
 		* Return first event of a type from history
 		@param String $eventName
 		@return Event
 	**/
-	FIRST(eventName) {
+	static first(history, eventName) {
 		let i = 0;
-		while (i < this.history.length) {
-			if (this.history[i].name == eventName) return this.history[i];
+		while (i < history.length) {
+			if (history[i].name == eventName) return history[i];
 			i++;
 		}
 		return {};
 	}
 
-	/*** LAST method
+	/*** last method
 		* Return last event of a type from history
 		@param String $eventName
 		@return Event
 	**/
-	LAST(eventName) {
-		let i = this.history.length - 1;
-		while(i >= 0){
-			if(this.history[i].name == eventName) return this.history[i];
+	static last(history, eventName) {
+		let i = history.length - 1;
+		while (i >= 0) {
+			if (history[i].name == eventName) return history[i];
 			i--;
 		}
 		return {};
 	}
 
-	/*** PREVIOUS method
+	/*** previous method
 		* Returns last event from history
 		@return Event
 	**/
-	PREVIOUS() {
-		if(this.history.length > 0){
-			return this.history[this.history.length - 1];
+	static previous() {
+		if (history.length > 0) {
+			return history[history.length - 1];
 		}
 		return {};
 	}
 
-	/*** RANDOM method
+	/*** random method
 		* Returns a random element of an array
 		@param Array[Class] $array
 		@return Class
 	**/
-	RANDOM(array) {
-		if (array.length > 0) return array[Math.floor(Math.random()*array.length)];
+	static random(array) {
+		if (array.length > 0) {
+			const element = array[Math.floor(Math.random()*array.length)];
+			return element;
+		}
 		return "";
 	}
 }

@@ -2,7 +2,7 @@ module.exports = {
 	"settings": {
 		"startTimestamp": 1514764800, // Required. Start time for generation.
 		"endTimestamp": 1530403200, // Requied. End time for generation.
-		"retention": [0.6, 0.3, 0.3], // Required. Probability of customer having another session.
+		"retention": [], // Required. Probability of customer having another session.
 		"sessionMean": 12, // Optional, defaults to 12. Mean around which events will be normally distributed throughout the day.
 		"sessionStd": 300000, // Optional, defaults to 1000*60*60*24/4. Standard deviation for events generation.
 		"nextSessionDaysMin": 5, // Optional, defaults to 3. Minimal number of days after which another session is created.
@@ -13,7 +13,7 @@ module.exports = {
 		{
 			"name": "purchaseFlow", // Optional, default to "Unnamed flow". Name of the Flow.
 			"startNode": "4", // Required. ID of the starting Node.
-			"exitNode": "2", // Required. ID of the ending Node.
+			"exitNode": "3", // Required. ID of the ending Node.
 			"nodes": [ // Optional defaults to [].
 				{
 					"id": "1", // Required.
@@ -33,6 +33,9 @@ module.exports = {
 					"id": "3", // Required.
 					"type": "event", // Required.
 					"attributes": { // Required.
+						"resourcesDefinitions": {
+							"last_view_item": "{{ LAST('view_item') }}"
+						},
 						"name": "blank_event" // Optional, defaults to id.
 					}
 				},
@@ -42,14 +45,10 @@ module.exports = {
 					"attributes": { // Required.
 						"name": "view_item", // Optional, defaults to id.
 						"resourcesDefinitions": { // Optional, defaults to {}.
-							"catalog": "{{ catalog }}",
-							"sale_name": "Black Friday Sale!",
-							"discounts": "{ 'student': 50, child: 60, adult: 0 }"
+							"item": "{{ RANDOM(catalog) }}"
 						},
 						"attributesDefinitions": { // Optional, defaults to {}.
-							"item_id": "{{ resources.sale_name }}",
-							"item_name": "{{ customer.name }}",
-							"item_x": "{{ RANDOM(catalog) }}"
+							"item_id": "{% if false %} 'x' {% else %} 'y' {% endif %}"
 						},
 						"pageVisit": { // Optional, defaults to { enabled: false }.
 							"enabled": false,
@@ -72,7 +71,7 @@ module.exports = {
 				}
 			],
 			"transitions": [ // Optional, defaults to [].
-				{ "source": "4", "destination": "2", "probability": 1 }
+				{ "source": "4", "destination": "3", "probability": 1 }
 			]
 		}
 	],
@@ -80,6 +79,7 @@ module.exports = {
 		{ "ids": { "registered": "x" }, "attributes": { "name": "Lukas", "surname": "Cerny" } }
 	],
 	"catalog": [ // Optional, defaults to [].
-		{ "item_id": "1", "item_name": "Socks" }
+		{ "item_id": "1", "item_name": "Socks" },
+		{ "item_id": "2", "item_name": "Jeans" }
 	]
 };
