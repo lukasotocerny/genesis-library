@@ -15,7 +15,11 @@ export default class Transition {
 		this.probability = probability;
 		this.option = option;
 	}
-    
+	
+	/** trueSourceNode method
+		* Method for recognizing whether Transition comes from true part of Condition node
+		@return Boolean
+	 */
 	trueSourceNode() {
 		return this.option === "true" || this.option === true;
 	}

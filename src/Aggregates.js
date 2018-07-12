@@ -1,39 +1,54 @@
 export default class Aggregate {
-    constructor(history) {
-        this.history = history;
-    }
+	constructor(history) {
+		this.history = history;
+	}
 
-    // Return the First event of specific type
-    FIRST(event_name) {
-        let i = 0;
-        while(i <  _history.length){
-            if(_history[i].name == event_name) return _history[i];
-            i++;
-        }
-        return {};
-    };
+	/*** FIRST method
+        * Return first event of a type from history
+        @param String $eventName
+        @return Event
+    **/
+	FIRST(eventName) {
+		let i = 0;
+		while (i < this.history.length) {
+			if (this.history[i].name == eventName) return this.history[i];
+			i++;
+		}
+		return {};
+	}
 
-    // Return the Last event of specific type
-    LAST(event_name) {
-        let i = _history.length - 1;
-        while(i >= 0){
-            if(_history[i].name == event_name) return _history[i];
-            i--;
-        }
-        return {};
-    };
+	/*** LAST method
+        * Return last event of a type from history
+        @param String $eventName
+        @return Event
+    **/
+	LAST(eventName) {
+		let i = this.history.length - 1;
+		while(i >= 0){
+			if(this.history[i].name == eventName) return this.history[i];
+			i--;
+		}
+		return {};
+	}
 
-    // Return the previous event
-    PREVIOUS() {
-        if(_history.length > 0){
-            return _history[_history.length - 1];
-        }
-        return {};
-    }
+	/*** PREVIOUS method
+        * Returns last event from history
+        @return Event
+    **/
+	PREVIOUS() {
+		if(this.history.length > 0){
+			return this.history[this.history.length - 1];
+		}
+		return {};
+	}
 
-    // Return a random element from an array
-    RANDOM(array) {
-        if (array.length > 0) return array[Math.floor(Math.random()*array.length)];
-        return "";
-    }
+	/*** RANDOM method
+        * Returns a random element of an array
+        @param Array[Class] $array
+        @return Class
+    **/
+	RANDOM(array) {
+		if (array.length > 0) return array[Math.floor(Math.random()*array.length)];
+		return "";
+	}
 }

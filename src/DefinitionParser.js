@@ -46,25 +46,20 @@ const translateJinja = function(definition) {
 	@param String $type
 	@param String $definition
  */
-export default function parseDefinition(definition, {session, customer, history, timestamp, catalog, resources}) {
+export default function parseDefinition(definition, context) {
 	/* Create a new instance of Aggregates */
-	const aggregate = new Aggregate(history);
+	const aggregate = new Aggregate(context.history);
 
 	/* Parse the string definition */
 	const parsedDefinition = translateJinja(definition);
 
 	/* Create context for SafeEval */
-	const context = {
+	Object.assign(context, {
 		PREVIOUS: aggregate.PREVIOUS,
 		FIRST: aggregate.FIRST,
 		LAST: aggregate.LAST,
-		RANDOM: aggregate.RANDOM,
-		customer: customer,
-		session: session,
-		catalog: catalog,
-		resources: resources,
-		res: resources
-	};
+		RANDOM: aggregate.RANDOM
+	})
 
 	return SafeEval(parsedDefinition, context);
 }

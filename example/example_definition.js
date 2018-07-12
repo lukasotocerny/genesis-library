@@ -2,7 +2,7 @@ module.exports = {
 	"settings": {
 		"startTimestamp": 1514764800,
 		"endTimestamp": 1530403200,
-		"retention": [0.6, 0.3, 0.3],
+		"retention": [],
 		"sessionMean": 12,
 		"nextSessionDaysMin": 5,
 		"nextSessionDaysMax": 20,
@@ -15,30 +15,10 @@ module.exports = {
 			"exitNode": "2",
 			"nodes": [
 				{
-					"id": "1",
-					"type": "action",
-					"attributes": {
-						"definition": "session.id = 42; session.cart = [{id: 1},{id: 2},{id: 3}];"
-					}
-				},
-				{
 					"id": "2",
 					"type": "event",
 					"attributes": {
 						"name": "hello"
-					}
-				},
-				{
-					"id": "3",
-					"type": "customer_update",
-					"attributes": {
-						"attributesDefinitions": {
-							"session_id": "{{ session.id }}",
-							"name": "{{ customer.attributes.name }}"
-						},
-						"idsDefinitions": {
-							"registered": "{{ customer.attributes.email }}"
-						}
 					}
 				},
 				{
@@ -52,7 +32,9 @@ module.exports = {
 							"discounts": "{ 'student': 50, child: 60, adult: 0 }"
 						},
 						"attributesDefinitions": {
-							"item_id": "{{ resources.sale_name }}"
+							"item_id": "{{ resources.sale_name }}",
+							"item_name": "{{ customer.name }}",
+							"item_x": "{{ RANDOM(catalog) }}"
 						},
 						"pageVisit": {
 							"enabled": false,
@@ -75,12 +57,7 @@ module.exports = {
 				}
 			],
 			"transitions": [
-				{
-					"source": "1",
-					"destination": "2",
-					"probability": 0.5,
-					"sourceOption": "true"
-				}
+				{ "source": "4", "destination": "2", "probability": 1 }
 			]
 		}
 	],
