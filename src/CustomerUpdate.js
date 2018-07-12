@@ -3,14 +3,14 @@ import Node from "./Node.js";
 
 export default class CustomerUpdate extends Node {
 	/*** constructor method
-        @param String $id
-            * ID of the Node
-        @param Dictionary $idConstructors
-            * Keys are ids and values are stringified JavaScript functions returning string
-        @param Dictionary $idConstructors
-            * Keys are ids and values are stringified JavaScript functions returning string
-        @return null
-    **/
+		@param String $id
+			* ID of the Node
+		@param Dictionary $idConstructors
+			* Keys are ids and values are stringified JavaScript functions returning string
+		@param Dictionary $idConstructors
+			* Keys are ids and values are stringified JavaScript functions returning string
+		@return null
+	**/
 	constructor(id, idsConstructors, attributesConstructors) {
 		super(id);
 		this.idsConstructors = idsConstructors;
@@ -18,10 +18,10 @@ export default class CustomerUpdate extends Node {
 	}
 
 	/*** apply method
-        * Updates Customer attributes and ids and creates Event customer_update
-        @param Dictionary $context
-        @return null
-    **/
+		* Updates Customer attributes and ids and creates Event customer_update
+		@param Dictionary $context
+		@return null
+	**/
 	apply(context) {
 		const updateIds = {};
 		const updateAttributes = {};

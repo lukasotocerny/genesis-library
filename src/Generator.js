@@ -5,10 +5,10 @@ const DAY_IN_MILISECONDS = 60*60*24;
 
 export default class Generator {
 	/*** constructor method
-        @param Dictionary $definition
-            * Definition which contains all the fields how to generate the dataset
-        @return null
-    **/
+		@param Dictionary $definition
+			* Definition which contains all the fields how to generate the dataset
+		@return null
+	**/
 	constructor(definition) {
 		/* Customer before instantiation */
 		this.customersRaw = definition.customers;
@@ -40,12 +40,12 @@ export default class Generator {
 	}
 
 	/*** calculateOffset method
-        * Calculates and offset in milliseconds from this.sessionMean. Used for centralising events around desired time.
-        @param Integer timestamp
-            * Timestamp for which to calculate the offset.
-        @return Integer
-            * Offset, number of miliseconds from this.sessionMean.
-    **/
+		* Calculates and offset in milliseconds from this.sessionMean. Used for centralising events around desired time.
+		@param Integer timestamp
+			* Timestamp for which to calculate the offset.
+		@return Integer
+			* Offset, number of miliseconds from this.sessionMean.
+	**/
 	calculateOffset(timestamp) {
 		const timestampDate = new Date(timestamp);
 		const timestampHours = timestampDate.getHours();
@@ -61,10 +61,10 @@ export default class Generator {
 	}
 
 	/*** createCustomers method
-        * Creates Customers uniformly distributed across the time range.
-        @return Array[Customer]
-            * Array of generated Customers.
-    **/
+		* Creates Customers uniformly distributed across the time range.
+		@return Array[Customer]
+			* Array of generated Customers.
+	**/
 	createCustomers() {
 		for (let customer of this.customersRaw) {
 			/* Generate day with uniform distribution */
@@ -81,10 +81,10 @@ export default class Generator {
 	}
 
 	/*** createSessions method
-        @param Customer $customer
-            * Customer for which generator creates sessions and stores them in Customer sessions attribute
-        @return null
-    **/
+		@param Customer $customer
+			* Customer for which generator creates sessions and stores them in Customer sessions attribute
+		@return null
+	**/
 	createSessions(customer) {
 		let numberOfSessions = 0;
 		/* Randomly choose a flow */

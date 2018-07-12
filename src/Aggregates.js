@@ -4,10 +4,10 @@ export default class Aggregate {
 	}
 
 	/*** FIRST method
-        * Return first event of a type from history
-        @param String $eventName
-        @return Event
-    **/
+		* Return first event of a type from history
+		@param String $eventName
+		@return Event
+	**/
 	FIRST(eventName) {
 		let i = 0;
 		while (i < this.history.length) {
@@ -18,10 +18,10 @@ export default class Aggregate {
 	}
 
 	/*** LAST method
-        * Return last event of a type from history
-        @param String $eventName
-        @return Event
-    **/
+		* Return last event of a type from history
+		@param String $eventName
+		@return Event
+	**/
 	LAST(eventName) {
 		let i = this.history.length - 1;
 		while(i >= 0){
@@ -32,9 +32,9 @@ export default class Aggregate {
 	}
 
 	/*** PREVIOUS method
-        * Returns last event from history
-        @return Event
-    **/
+		* Returns last event from history
+		@return Event
+	**/
 	PREVIOUS() {
 		if(this.history.length > 0){
 			return this.history[this.history.length - 1];
@@ -43,10 +43,10 @@ export default class Aggregate {
 	}
 
 	/*** RANDOM method
-        * Returns a random element of an array
-        @param Array[Class] $array
-        @return Class
-    **/
+		* Returns a random element of an array
+		@param Array[Class] $array
+		@return Class
+	**/
 	RANDOM(array) {
 		if (array.length > 0) return array[Math.floor(Math.random()*array.length)];
 		return "";

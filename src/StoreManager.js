@@ -1,5 +1,5 @@
-const _ = require('lodash');
-const fs = require('fs');
+import _ from "lodash";
+import { appendFileSync } from "fs";
 
 class StoreManager {
 	/*** constructor method
@@ -23,7 +23,7 @@ class StoreManager {
     **/
 	writeQueue() {
 		if (this.commands.length == 0) return;
-		fs.appendFileSync(this.filepath, JSON.stringify({ "commands": this.commands }) + "\n");
+		appendFileSync(this.filepath, JSON.stringify({ "commands": this.commands }) + "\n");
 		console.log(`Written ${this.commands.length} objects`);
 		console.log("Total writes", this.total);
 		this.commands = [];
@@ -58,21 +58,21 @@ class StoreManager {
         @return null
     **/
 	addEvent(name, attributes, timestamp, registered, cookie) {
-		this.projectIds.forEach(project_id => {
+		this.projectIds.forEach(projectId => {
 			this.enqueue({
-				"name": "crm\/events",
+				"name": "crm/events",
 				"data": {
 					"customer_ids": {
 						"registered": registered,
 						"cookie": cookie
 					},
-					"project_id": project_id,
+					"project_id": projectId,
 					"type": name,
 					"properties": attributes,
 					"timestamp": timestamp
 				}
 			});
-		})
+		});
 		return null;
 	}
     
@@ -90,7 +90,7 @@ class StoreManager {
 		if (cookie !== null) {
 			this.projectIds.forEach(projectId => {
 				this.enqueue({
-					"name": "crm\/customers",
+					"name": "crm/customers",
 					"data": {
 						"ids": {
 							"registered": registered,
@@ -104,7 +104,7 @@ class StoreManager {
 		} else {
 			this.projectIds.forEach(projectId => {
 				this.enqueue({
-					"name": "crm\/customers",
+					"name": "crm/customers",
 					"data": {
 						"ids": {
 							"registered": registered
@@ -124,20 +124,19 @@ class StoreManager {
         @return null
     **/
 	storeBulkApi(customer) {
-		let data = [];
 		let cookie = null;
 		let customerAttributes = {};
 		Object.keys(customer.attributes).forEach((k) => {
 			if (k == "registered" || k == "cookie" || k == "ignore") return;
 			customerAttributes[k] = customer.attributes[k];
-		})
+		});
 		/* If more than one cookie, one command for each cookie has to be sent */
 		if (_.isArray(customer.attributes.cookie)) {
 			cookie = customer.attributes.cookie[0];
 			this.addCustomer({}, customer.attributes.registered, cookie);
 			for (let i=1;i<customer.attributes.cookie.length;i++) {
 				this.addCustomer({}, customer.attributes.registered, customer.attributes.cookie[i]);
-			};
+			}
 		} else {
 			cookie = customer.attributes.cookie;
 			/* Identify customer */
@@ -149,10 +148,10 @@ class StoreManager {
 		customer.sessions.forEach((session) => {
 			session.forEach((event) => {
 				this.addEvent(event.name, event.attributes, Math.floor(event.timestamp/1000), customer.attributes.registered, cookie);
-			})
+			});
 		});
 		return null;
 	}
 }
 
-module.exports = StoreManager;
+export default StoreManager;

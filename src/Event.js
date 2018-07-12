@@ -3,20 +3,20 @@ import Node from "./Node.js";
 
 export default class Event extends Node {
 	/*** constructor method 
-        @param String $id 
-            * ID of the Event
-        @param String $name
-            * Name of the Event
-        @param Dictionary $eventAttributes
-            * Attributes of the event. Key is name of attribute, value is function generating the value
-        @param Dictionary $resources
-            * Resources of the event. Key is name of attribute, value is function generating the value
-        @param Dictionary $repetition
-            * Object specifying whether to generate this Event multiple times
-        @param Dictionary $pageVisit
-            * Attributes for generating pageVisit events which get generated alongside of this Event
-        @return null
-    **/
+		@param String $id 
+			* ID of the Event
+		@param String $name
+			* Name of the Event
+		@param Dictionary $eventAttributes
+			* Attributes of the event. Key is name of attribute, value is function generating the value
+		@param Dictionary $resources
+			* Resources of the event. Key is name of attribute, value is function generating the value
+		@param Dictionary $repetition
+			* Object specifying whether to generate this Event multiple times
+		@param Dictionary $pageVisit
+			* Attributes for generating pageVisit events which get generated alongside of this Event
+		@return null
+	**/
 	constructor(id, name, eventAttributes, resources, repetition, pageVisit) {
 		super(id);
 		this.name = name || id;
@@ -45,11 +45,11 @@ export default class Event extends Node {
 	}
     
 	/*** create method
-        * Initiates (in some sense instantiates) Event for a specific Customer.
-        @param Dictionary $context
-        @return Event
-            * Returns this Event with created attributes
-    **/
+		* Initiates (in some sense instantiates) Event for a specific Customer.
+		@param Dictionary $context
+		@return Event
+			* Returns this Event with created attributes
+	**/
 	create(context) {
 		let attributes = {};
 		/* Initiate new resources */
@@ -89,9 +89,9 @@ export default class Event extends Node {
 	}
     
 	/*** toExponeaJson method
-        @return Dictionary
-            * Returns dictionary containing information required by Exponea API
-    **/
+		@return Dictionary
+			* Returns dictionary containing information required by Exponea API
+	**/
 	getExponeaEventRequest() {
 		return {
 			type: "event",
@@ -102,9 +102,9 @@ export default class Event extends Node {
 	}
 
 	/*** getExponeaPageVisitRequest method
-        @return Dictionary
-            * Returns Exponea API compatible pageVisit Event
-    **/
+		@return Dictionary
+			* Returns Exponea API compatible pageVisit Event
+	**/
 	getExponeaPageEvent() {
 		return this.pageVisit.request;
 	}

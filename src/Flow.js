@@ -8,10 +8,10 @@ import Transition from "./Transition.js";
 
 export default class Flow {
 	/*** constructor method
-        @param Dictionary $definition
-            * Definition describing Flow
-        @return null
-    **/
+		@param Dictionary $definition
+			* Definition describing Flow
+		@return null
+	**/
 	constructor(definition) {
 		this.name = definition.name || "Unnamed flow";
 		/* Instantiate nodes from definition */
@@ -38,19 +38,21 @@ export default class Flow {
 			this.transitions.push(new Transition(def.source, def.destination, def.probability));
 		});
 		this.catalog = definition.catalog;
+		if (definition.startNode === undefined) throw(`Flow ${this.name} has undefined startNode`);
 		this.startNode = this.nodes.filter((node) => node.isEqual(definition.startNode))[0];
-		if (!!this.startNode === false) throw(`Start event "${start}" is not in this Session events.`);
+		if (!!this.startNode === false) throw(`startNode "${definition.startNode}" is not defined in Flow ${this.name} nodes.`);
+		if (definition.exitNode === undefined) throw(`Flow ${this.name} has undefined exitNode`);
 		this.exitNode = this.nodes.filter((node) => node.isEqual(definition.exitNode))[0];
-		if (!!this.exitNode === false) throw(`Exit event "${exit}" is not in this Session events.`);
+		if (!!this.exitNode === false) throw(`exitNode "${definition.exitNode}" is not defined in Flow ${this.name} nodes.`);
 		/* Adds transitions to exitNode if probabilities do not add up to 1 */
 		this.validateTransitions();
 		return null;
 	}
 
 	/*** validateSessionTransitions method
-        * Checks if probabilities of Transitions from an Event add up to 1, and adds Transition to exitNode if not.
-        @return null
-    **/
+		* Checks if probabilities of Transitions from an Event add up to 1, and adds Transition to exitNode if not.
+		@return null
+	**/
 	validateTransitions() {
 		this.nodes.forEach((node) => {
 			/* exitNode does not have any transitions */
@@ -74,10 +76,10 @@ export default class Flow {
 	}
     
 	/*** nextEvent method
-        * Looks for next legal Event and returns it.
-        @return Event|null
-            * Returns next Event if there is one, or null if exitNode has been reached.
-    **/
+		* Looks for next legal Event and returns it.
+		@return Event|null
+			* Returns next Event if there is one, or null if exitNode has been reached.
+	**/
 	nextNode(currentNode, context) {
 		if (currentNode.isEqual(this.exitNode)) return null;
 		/* Evaluate Condition nodes with conditional transitions */
@@ -139,14 +141,14 @@ export default class Flow {
 	}
 
 	/*** createSession method
-        * Generates Events based on the probabilistic model of this Session and returns array containing those
-        @param Integer $timestamp
-            * Timestamp at which this Session will start
-        @param Customer $customer
-            * Customer for which this Session is generated
-        @return Array[Event]
-            * An array containing Events generated for this Session.
-    **/
+		* Generates Events based on the probabilistic model of this Session and returns array containing those
+		@param Integer $timestamp
+			* Timestamp at which this Session will start
+		@param Customer $customer
+			* Customer for which this Session is generated
+		@return Array[Event]
+			* An array containing Events generated for this Session.
+	**/
 	createEvents(timestampInitial, customer) {
 		const context = Node.createContext({}, customer.attributes, [], timestampInitial, this.catalog);
 		let currentNode = null;

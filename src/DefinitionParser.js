@@ -2,10 +2,10 @@ import Aggregate from "./Aggregates.js";
 import SafeEval from "./SafeEval.js";
 
 /*** translateJinja method
-    * Function to convert Jinja definition to JavaScript
-    @param String $definition
-        * Jinja definition
-    @return String Javascript code
+	* Function to convert Jinja definition to JavaScript
+	@param String $definition
+		* Jinja definition
+	@return String Javascript code
 **/
 const translateJinja = function(definition) {
 	/* Parse all prints of JSONs {{ object | safe }} */
@@ -59,7 +59,6 @@ export default function parseDefinition(definition, context) {
 		FIRST: aggregate.FIRST,
 		LAST: aggregate.LAST,
 		RANDOM: aggregate.RANDOM
-	})
-
+	});
 	return SafeEval(parsedDefinition, context);
 }
