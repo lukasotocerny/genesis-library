@@ -1,6 +1,7 @@
 import randgen from "randgen";
 import Flow from "./Flow.js";
 import Customer from "./Customer.js";
+import Context from "./Context.js";
 const DAY_IN_MILISECONDS = 60*60*24;
 
 export default class Generator {
@@ -34,8 +35,7 @@ export default class Generator {
 		this.flows = [];
 		definition.flows.forEach((flowDefinition) => {
 			const flow = new Flow(flowDefinition);
-			flow.eventsSeparationTime = this.eventsSeparationTime;
-			flow.catalog = this.catalog;
+			flow.context = new Context({ eventsSeparationTime: this.eventsSeparationTime }, this.catalog);
 			this.flows.push(flow);
 		});
 	}

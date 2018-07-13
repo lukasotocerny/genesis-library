@@ -1,4 +1,3 @@
-import Node from "./Node.js";
 import Event from "./Event.js";
 import Condition from "./Condition.js";
 import Action from "./Action.js";
@@ -46,10 +45,8 @@ export default class Flow {
 		if (!!this.exitNode === false) throw(`exitNode "${definition.exitNode}" is not defined in Flow ${this.name} nodes.`);
 		/* Adds transitions to exitNode if probabilities do not add up to 1 */
 		this.validateTransitions();
-		/* Catalog is set by the generator during runtime */
-		this.catalog = null;
-		/* eventsSeparationTime is se by the generator during runtime */
-		this.eventsSeparationTime = null;
+		/* context is se by the generator during runtime */
+		this.context = null;
 		return null;
 	}
 
@@ -84,7 +81,8 @@ export default class Flow {
 		@return Event|null
 			* Returns next Event if there is one, or null if exitNode has been reached.
 	**/
-	nextNode(currentNode, context) {
+	nextNode(currentNode) {
+		const context = this.context;
 		if (currentNode.isEqual(this.exitNode)) return null;
 		/* Evaluate Condition nodes with conditional transitions */
 		if (currentNode instanceof Condition) {
@@ -92,7 +90,7 @@ export default class Flow {
 			const roll = Math.random();
 			/* Get all Transitions from currentNode */
 			let transitions = [];
-			if (context.result === true) {
+			if (context.getConditionResult() === true) {
 				transitions = this.transitions.filter((t) => {
 					return currentNode.isEqual(t.source) && t.trueSourceCondition();
 				});
@@ -101,8 +99,6 @@ export default class Flow {
 					return currentNode.isEqual(t.source) && !t.trueSourceCondition();
 				});
 			}
-			/* Delete the result */
-			context.result = null;
 			for (let i=0; i < transitions.length; i++) {
 				if (sum <= roll && roll < sum + transitions[i].probability) {
 					nextNode = this.nodes.filter((s) => s.isEqual(transitions[i].destination))[0];
@@ -154,36 +150,22 @@ export default class Flow {
 			* An array containing Events generated for this Session.
 	**/
 	createEvents(timestampInitial, customer) {
-		const context = Node.createContext({}, customer.attributes, [], timestampInitial, this.catalog);
+		const context = this.context.createForNewSession(timestampInitial, customer.attributes);
 		let currentNode = null;
 		let nextNode = this.startNode;
 		while (nextNode !== null) {
 			/* Empty resources for new Node, since they have only scope of their own Node */
-			context.resources = {};
+			context.emptyResources();
 			if (nextNode instanceof Event) {
 				const eventClass = nextNode;              
-				if (eventClass.repetition.enabled) {
-					const repetitionList = DefinitionParser(eventClass.repetition.repetitionDefinition, context);
-					for (item of repetitionList) {
-						context.resources.iterator = item;
-						const event = eventClass.create(context);
-						if (eventClass.pageVisit.enabled === true) {
-							context.history.extend(...event);
-						} else {
-							context.history.push(event);
-						}
-						context.timestamp += Math.round(this.eventsSeparationTime * Math.random());
-					}
+				if (eventClass.repetition.enabled && eventClass.repetition.type === "iterative") {
+					const iteratorList = JSON.parse(DefinitionParser(eventClass.repetition.attributes.definition, context));
+					context.setIteratorList(iteratorList);
+					eventClass.addEvents(context);
 					currentNode = nextNode;
 					nextNode = this.nextNode(currentNode);
 				} else {
-					const event = eventClass.create(context);
-					if (eventClass.pageVisit.enabled === true) {
-						context.history.push(...event);
-					} else {
-						context.history.push(event);
-					}
-					context.timestamp += Math.round(this.eventsSeparationTime * Math.random());
+					eventClass.addEvents(context);
 					currentNode = nextNode;
 					nextNode = this.nextNode(currentNode);
 				}
@@ -192,12 +174,11 @@ export default class Flow {
 				currentNode = nextNode;
 				nextNode = this.nextNode(currentNode);
 			} else if (nextNode instanceof Condition) {
-				context.result = nextNode.validate(context);
+				context.setConditionResult(nextNode.validate(context));
 				currentNode = nextNode;
-				nextNode = this.nextNode(currentNode, context.result);
+				nextNode = this.nextNode(currentNode, context);
 			} else if (nextNode instanceof CustomerUpdate) {
-				const customerUpdate = nextNode.apply(context);
-				context.history.push(customerUpdate);
+				nextNode.apply(context);
 				currentNode = nextNode;
 				nextNode = this.nextNode(currentNode);
 			} else {

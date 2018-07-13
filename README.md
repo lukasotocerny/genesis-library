@@ -103,7 +103,7 @@ const definition = {
 							"type": "iterative",
 							"enabled": false,
 							"attributes": {
-								"iteratorDefinition": "{{ session.cart | safe }}"
+								"definition": "{{ catalog | safe }}"
 							}
 						}
 					}

@@ -47,26 +47,28 @@ export default class Event extends Node {
 	/*** create method
 		* Initiates (in some sense instantiates) Event for a specific Customer.
 		@param Dictionary $context
-		@return Event
-			* Returns this Event with created attributes
+		@return Array[Event]
+			* Returns array of Events, due to pageVisits
 	**/
 	create(context) {
 		let attributes = {};
 		/* Initiate new resources */
 		Object.keys(this.resourcesContructors).forEach((k) => {
 			if (this.resourcesContructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" resource function: ${ k }`);
-			context.resources[k] = DefinitionParser(this.resourcesContructors[k], context);
+			context.saveResource(k, DefinitionParser(this.resourcesContructors[k], context));
 		});
 		/* Initiate new attributes */
 		Object.keys(this.attributesConstructors).forEach((k) => {
 			if (this.attributesConstructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" attribute function: ${ k }`);
 			attributes[k] = DefinitionParser(this.attributesConstructors[k], context);
 		});
+		/* Deep copy resources */ 
+		const resources = Object.assign({}, context.resources);
 		const event = {
 			type: "event",
 			name: this.name,
 			timestamp: context.timestamp,
-			resources: context.resources,
+			resources: resources,
 			attributes: attributes
 		};
 		/* Initiate pageVisit event */
@@ -80,12 +82,40 @@ export default class Event extends Node {
 				type: "event",
 				name: "page_visit",
 				timestamp: context.timestamp,
-				resources: context.resources,
+				resources: resources,
 				attributes: attributesPageVisit
 			};
 			return [event, pageVisit];
 		}
-		return event;
+		return [event];
+	}
+
+	addEvents(context) {
+		if (this.repetition.enabled && this.repetition.type === "iterative") {
+			const iteratorList = context.getIteratorList();
+			for (let item of iteratorList) {
+				context.saveResource("iterator", JSON.stringify(item));
+				const event = this.create(context);
+				context.saveEvents(...event);
+				context.incrementTimestamp();
+			}
+		} else {
+			const event = this.create(context);
+			context.saveEvents(...event);
+			context.incrementTimestamp();
+		}
+		/* Repeat if repetitive repetition is enabled */
+		if (this.repetition.enabled && this.repetition.type === "repetitive") {
+			let roll = Math.random();
+			const probability = parseFloat(this.repetition.attributes.probability);
+			while (roll < probability) {
+				const event = this.create(context);
+				context.saveEvents(...event);
+				context.incrementTimestamp();
+				roll = Math.random();
+			}	
+		}
+		return null;
 	}
     
 	/*** toExponeaJson method

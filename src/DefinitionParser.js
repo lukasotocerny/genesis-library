@@ -15,22 +15,20 @@ const safeEval = function(code, context) {
 	const resultKey = "SAFE_EVAL_" + Math.floor(Math.random() * 1000000);
 	sandbox[resultKey] = {};
 	code = resultKey + "=" + code;
-	if (context) {
-		Object.keys(context).forEach(function (key) {
-			/* Transform resources to JavaScript objects so they are accessible through Jinja */
-			if (key === "resources") {
-				sandbox[key] = {};
-				Object.keys(context[key]).forEach((res) => {
-					if (typeof context[key][res] !== "string" && !(context[key][res] instanceof String)) {
-						throw(`Resource ${res} must be stringified by the operator 'safe', e.g. {{ catalog | safe }}`);
-					}
-					sandbox[key][res] = JSON.parse(context[key][res]);
-				});
-			} else {
-				sandbox[key] = context[key];
-			}
-		});
-	}
+	Object.keys(context).forEach(function (key) {
+		/* Transform resources to JavaScript objects so they are accessible through Jinja */
+		if (key === "resources") {
+			sandbox[key] = {};
+			Object.keys(context[key]).forEach((res) => {
+				if (typeof context[key][res] !== "string" && !(context[key][res] instanceof String)) {
+					throw(`Resource ${res} must be stringified by the operator 'safe', e.g. {{ catalog | safe }}`);
+				}
+				sandbox[key][res] = JSON.parse(context[key][res]);
+			});
+		} else {
+			sandbox[key] = context[key];
+		}
+	});
 	vm.runInNewContext(code, sandbox);
 	return sandbox[resultKey];
 };
@@ -45,11 +43,12 @@ const safeEval = function(code, context) {
 		* String with interpretted Jinja expressions
  */
 export default function parseDefinition(definition, context) {
+	const sandboxContext = context.getSandboxContext();
 	/* Create context for SafeEval */
-	Object.assign(context, {
-		PREVIOUS: (() => Aggregate.previous(context.history)),
-		FIRST: ((name) => Aggregate.first(context.history, name)),
-		LAST: ((name) => Aggregate.last(context.history, name)),
+	Object.assign(sandboxContext, {
+		PREVIOUS: (() => Aggregate.previous(sandboxContext.history)),
+		FIRST: ((name) => Aggregate.first(sandboxContext.history, name)),
+		LAST: ((name) => Aggregate.last(sandboxContext.history, name)),
 		RANDOM: ((array) => Aggregate.random(array))
 	});
 	/* Parse all prints of JSONs {{ object | safe }} */
@@ -57,7 +56,7 @@ export default function parseDefinition(definition, context) {
 	const safeResults = definition.match(safeRegex) || [];
 	for (let word of safeResults) {
 		const parsedWord = word.replace("{{", "JSON.stringify(").replace("| safe }}",")");
-		const interpretedWord = safeEval(parsedWord, context);
+		const interpretedWord = safeEval(parsedWord, sandboxContext);
 		definition = definition.replace(word, interpretedWord);
 	}
 	/* Parse all variables and function calls */
@@ -65,7 +64,7 @@ export default function parseDefinition(definition, context) {
 	const varResults = definition.match(varRegex) || [];
 	for (let word of varResults) {
 		const parsedWord = word.replace("{{", "").replace("}}", "");
-		const interpretedWord = safeEval(parsedWord, context);
+		const interpretedWord = safeEval(parsedWord, sandboxContext);
 		definition = definition.replace(word, interpretedWord);
 	}
 	/* Parse all if-else statements */
@@ -74,7 +73,7 @@ export default function parseDefinition(definition, context) {
 	for (let word of ifElseResults) {
 		/* Add double quotes for expressions, since variables are already intrerpreted above */
 		const parsedWord = word.replace("{% if", "(").replace("%}"," ? \"").replace("{% else %}", "\" : \"").replace("{% endif %}", "\" )");
-		const interpretedWord = safeEval(parsedWord, context);
+		const interpretedWord = safeEval(parsedWord, sandboxContext);
 		definition = definition.replace(word, interpretedWord);
 	}
 	/* Parse all if statements */
@@ -83,7 +82,7 @@ export default function parseDefinition(definition, context) {
 	for (let word of ifResults) {
 		/* Add double quotes for expressions, since variables are already intrerpreted above */
 		const parsedWord = word.replace("{% if", "(").replace("%}"," ? \"").replace("{% endif %}", "\" : '')");
-		const interpretedWord = safeEval(parsedWord, context);
+		const interpretedWord = safeEval(parsedWord, sandboxContext);
 		definition = definition.replace(word, interpretedWord);
 	}
 	return definition;
