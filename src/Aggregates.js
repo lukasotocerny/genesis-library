@@ -31,7 +31,7 @@ export default class Aggregate {
 		* Returns last event from history
 		@return Event
 	**/
-	static previous() {
+	static previous(history) {
 		if (history.length > 0) {
 			return history[history.length - 1];
 		}
