@@ -1,101 +1,147 @@
-class Event {
-    /*** constructor method 
-        @param String $id 
-            * ID of the event
-        @param Dictionary $eventAttributes
-            * Attributes of the event. Key is name of attribute, value is function generating the value
-        @return Array[Event]
-            * Array of multiple events if it is a template, or returning a single element array
-    **/
-    constructor(id, eventAttributes) {
-        this.id = id;
-        var events = [];
-        if (eventAttributes.siblings !== undefined) {
-            /* Deep copy the array of sibling */
-            var siblings = eventAttributes["siblings"].slice();
-            /* Delete attribute before constructor is recursively called */
-            delete eventAttributes["siblings"];
-            /* Instantiate event for each sibling */
-            siblings.forEach((sibling) => {
-                events = events.concat(new Event(sibling, eventAttributes));
-            })
-        }
-        if (eventAttributes.name !== undefined) {
-            this.name = eventAttributes.name;
-        } else {
-            this.name = id;
-        }
-        this.attributesConstructors = eventAttributes;
-        this.attributes = null;
-        /* Returns an array of initialized events */
-        return [this, ...events];
-    }
-    
-    /*** initiate method
-        @param Session $session
-            * Session into which Event will be insterted
-        @param Customer $customer
-            * Customer for which this Event is generated
-        @param Array[Dictionary] $history
-            * Array of events (represented by dictionaries with keys name, timestamp, attributes) for current session
-        @param Integer $timestamp
-            * Timestamp with which this Event is created. Used for inserting custom events into history.
-        @return Event
-            * Returns this Event with created attributes
-    **/
-    initiate(session, customer, history, timestamp) {
-        /* Initiate new attributes */
-        this.attributes = {};
-        Object.keys(this.attributesConstructors).forEach((k) => {
-            if (this.attributesConstructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" attribute function: ${ k }`);
-            if (k == "name") {
-                return;
-            } else if (k == "ignore") {
-                /* For security reasons include history and timestamp as parameter only in ignore attribute */
-                if (typeof this.attributesConstructors[k] === "string") {
-                    eval(this.attributesConstructors[k])(session, customer, history, timestamp);
-                } else {
-                    this.attributesConstructors[k](session, customer, history, timestamp);
-                }
-            } else {
-                if (typeof this.attributesConstructors[k] === "string") {
-                    this.attributes[k] = eval(this.attributesConstructors[k])(session, customer);
-                } else {
-                    this.attributes[k] = this.attributesConstructors[k](session, customer);
-                }
-            }
-            return;
-        });
-        return this;
-    }
-    
-    /*** toExponeaJson method
-        @return Dictionary
-            * Returns dictionary containing information required by Exponea API
-    **/
-    toExponeaJson() {
-        return {
-            name: this.name,
-            timestamp: this.timestamp,
-            attributes: this.attributes
-        }
-    }
-    
-    /*** isEqual method
-        * Used for comparison between two Events
-        @param Event|String $event
-            * Event which we are comparing this Event to, or String which is an ID of an Event
-        @return Boolean
-            * Boolean indicating whether they are equal or not
-    **/
-    isEqual(event) {
-        if (typeof(event) == "string" || event instanceof String) {
-            return this.id === event;
-        } else if (event instanceof Event) {
-            return this.id === event.id;
-        }
-        return false;
-    }
-}
+import DefinitionParser from "./DefinitionParser.js";
+import Node from "./Node.js";
 
-module.exports = Event;
+export default class Event extends Node {
+	/*** constructor method 
+		@param String $id 
+			* ID of the Event
+		@param String $name
+			* Name of the Event
+		@param Dictionary $eventAttributes
+			* Attributes of the event. Key is name of attribute, value is function generating the value
+		@param Dictionary $resources
+			* Resources of the event. Key is name of attribute, value is function generating the value
+		@param Dictionary $repetition
+			* Object specifying whether to generate this Event multiple times
+		@param Dictionary $pageVisit
+			* Attributes for generating pageVisit events which get generated alongside of this Event
+		@return null
+	**/
+	constructor(id, name, eventAttributes, resources, repetition, pageVisit) {
+		super(id);
+		this.name = name || id;
+		this.resourcesContructors = resources || {};
+		this.attributesConstructors = eventAttributes || {};
+		/* Setup repetition configuration */
+		if (repetition && repetition.enabled === undefined) {
+			throw(`Event ${name} repetition.enabled must be defined.`);
+		} else if (!!repetition === false || !!repetition.enabled === false || repetition.enabled === "false") {
+			this.repetition = {
+				enabled: false
+			};
+		} else {
+			this.repetition = repetition;
+		}
+		/* Setup pageVisit configuration */
+		if (pageVisit && pageVisit.enabled === undefined) {
+			throw(`Event ${name} pageVisit.enabled must be defined.`);
+		} else if (!!pageVisit === false || !!pageVisit.enabled === false || pageVisit.enabled === "false") {
+			this.pageVisit = {
+				enabled: false
+			};
+		} else {
+			this.pageVisit = pageVisit;
+		}
+	}
+    
+	/*** create method
+		* Initiates (in some sense instantiates) Event for a specific Customer.
+		@param Context $context
+		@return Array[Event]
+			* Returns array of Events, due to pageVisits
+	**/
+	create(context) {
+		let attributes = {};
+		/* Initiate new resources */
+		Object.keys(this.resourcesContructors).forEach((k) => {
+			if (this.resourcesContructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" resource function: ${ k }`);
+			context.saveResource(k, DefinitionParser(this.resourcesContructors[k], context));
+		});
+		/* Initiate new attributes */
+		Object.keys(this.attributesConstructors).forEach((k) => {
+			if (this.attributesConstructors[k] === undefined) throw(`Undefined EVENT "${ this.id }" attribute function: ${ k }`);
+			attributes[k] = DefinitionParser(this.attributesConstructors[k], context);
+		});
+		/* Deep copy resources */ 
+		const resources = Object.assign({}, context.resources);
+		const event = {
+			type: "event",
+			name: this.name,
+			timestamp: context.timestamp,
+			resources: resources,
+			attributes: attributes
+		};
+		/* Initiate pageVisit event */
+		let pageVisit = null;
+		if (this.pageVisit.enabled) {
+			let attributesPageVisit = {};
+			Object.keys(this.pageVisit.attributesDefinitions).forEach((key) => {
+				attributesPageVisit[key] = DefinitionParser(this.pageVisit.attributesDefinitions[key], context);
+			});
+			pageVisit = {
+				type: "event",
+				name: "page_visit",
+				timestamp: context.timestamp,
+				resources: resources,
+				attributes: attributesPageVisit
+			};
+			return [event, pageVisit];
+		}
+		return [event];
+	}
+
+	/*** addEvents method
+		* Adds all Events that are this instance of Events generates, including repetition and pageVisits
+		@param Context $context
+		@return null
+	 */
+	addEvents(context) {
+		if (this.repetition.enabled && this.repetition.type === "iterative") {
+			const iteratorList = context.getIteratorList();
+			for (let item of iteratorList) {
+				context.saveResource("iterator", JSON.stringify(item));
+				const event = this.create(context);
+				context.saveEvents(...event);
+				context.incrementTimestamp();
+			}
+		} else {
+			const event = this.create(context);
+			context.saveEvents(...event);
+			context.incrementTimestamp();
+		}
+		/* Repeat if repetitive repetition is enabled */
+		if (this.repetition.enabled && this.repetition.type === "repetitive") {
+			let roll = Math.random();
+			const probability = parseFloat(this.repetition.attributes.probability);
+			while (roll < probability) {
+				const event = this.create(context);
+				context.saveEvents(...event);
+				context.incrementTimestamp();
+				roll = Math.random();
+			}	
+		}
+		return null;
+	}
+    
+	/*** toExponeaJson method
+		@return Dictionary
+			* Returns dictionary containing information required by Exponea API
+	**/
+	getExponeaEventRequest() {
+		return {
+			type: "event",
+			name: this.name,
+			timestamp: this.timestamp,
+			attributes: this.attributes
+		};
+	}
+
+	/*** getExponeaPageVisitRequest method
+		@return Dictionary
+			* Returns Exponea API compatible pageVisit Event
+	**/
+	getExponeaPageEvent() {
+		return this.pageVisit.request;
+	}
+
+}
