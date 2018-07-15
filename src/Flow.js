@@ -34,8 +34,9 @@ export default class Flow {
 		/* Instantiate transitions from definition */
 		this.transitions = [];
 		definition.transitions.forEach((def) => {
-			this.transitions.push(new Transition(def.source, def.destination, def.probability));
+			this.transitions.push(new Transition(def.source, def.destination, def.probability, def.option));
 		});
+		console.log(this.transitions);
 		this.catalog = definition.catalog;
 		if (definition.startNode === undefined) throw(`Flow ${this.name} has undefined startNode`);
 		this.startNode = this.nodes.filter((node) => node.isEqual(definition.startNode))[0];
@@ -61,17 +62,22 @@ export default class Flow {
 			if (node instanceof Condition) {
 				let transitions, totalProbability;
 				// Evaluate True conditional nodes
-				transitions = this.transitions.filter((t) => (node.isEqual(t.source)) && t.trueSourceCondition());
+				transitions = this.transitions.filter((t) => { return (node.isEqual(t.source)) && t.trueSourceCondition(); });
 				totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
-				if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
+				if (totalProbability < 1) {
+					this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability, true));
+				}
 				// Evaluate False conditional nodes
-				transitions = this.transitions.filter((t) => (node.isEqual(t.source)) && !t.trueSourceCondition());
+				transitions = this.transitions.filter((t) => { return (node.isEqual(t.source)) && !t.trueSourceCondition(); });
 				totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
-				if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
+				if (totalProbability < 1) {
+					this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability, false));
+				}
+			} else {
+				const transitions = this.transitions.filter((t) => (node.isEqual(t.source)));
+				const totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
+				if (totalProbability < 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
 			}
-			const transitions = this.transitions.filter((t) => (node.isEqual(t.source)));
-			const totalProbability = transitions.reduce((sum, transition) => sum + transition.probability, 0);
-			if (totalProbability !== 1) this.transitions.push(new Transition(node.id, this.exitNode.id, 1 - totalProbability));
 		});
 		return null;
 	}
@@ -90,7 +96,7 @@ export default class Flow {
 			const roll = Math.random();
 			/* Get all Transitions from currentNode */
 			let transitions = [];
-			if (context.getConditionResult() === true) {
+			if (context.getConditionResult()) {
 				transitions = this.transitions.filter((t) => {
 					return currentNode.isEqual(t.source) && t.trueSourceCondition();
 				});
@@ -150,7 +156,7 @@ export default class Flow {
 			* An array containing Events generated for this Session.
 	**/
 	createEvents(timestampInitial, customer) {
-		const context = this.context.createForNewSession(timestampInitial, customer.attributes);
+		const context = this.context.createForNewSession(timestampInitial, customer);
 		let currentNode = null;
 		let nextNode = this.startNode;
 		while (nextNode !== null) {
@@ -174,7 +180,7 @@ export default class Flow {
 				currentNode = nextNode;
 				nextNode = this.nextNode(currentNode);
 			} else if (nextNode instanceof Condition) {
-				context.setConditionResult(nextNode.validate(context));
+				nextNode.validate(context);
 				currentNode = nextNode;
 				nextNode = this.nextNode(currentNode, context);
 			} else if (nextNode instanceof CustomerUpdate) {

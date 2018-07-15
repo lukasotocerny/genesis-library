@@ -28,10 +28,12 @@ export default class Condition extends Node {
 			* Array of items from the Catalog, which is shared in the Generation
 		@return null
 	**/
-	validate(session, customer, history, timestamp, catalog) {
-		const context = Node.createContext(session, customer, history, timestamp, catalog);
+	validate(context) {
 		const output = DefinitionParser(this.definition, context);
-		if (output == true || output == "true") return true;
-		return false;
+		if (output == true || output == "true") {
+			context.setConditionResult(true);
+		} else {
+			context.setConditionResult(false);
+		}
 	}
 }

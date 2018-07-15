@@ -1,5 +1,5 @@
 import Node from "./Node.js";
-import SafeEval from "./SafeEval.js";
+import parseDefinition from "./DefinitionParser.js";
 
 export default class Action extends Node {
 	/*** constructor method
@@ -27,9 +27,8 @@ export default class Action extends Node {
 			* Array of items from the Catalog, which is shared in the Generation
 		@return null
 	**/
-	execute(session, customer, history, timestamp, catalog) {
-		const context = Node.createContext(session, customer, history, timestamp, catalog);
-		SafeEval(this.definition, context);
+	execute(context) {
+		parseDefinition(this.definition, context);
 		return null;
 	}
 }

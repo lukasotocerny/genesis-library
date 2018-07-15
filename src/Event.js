@@ -46,7 +46,7 @@ export default class Event extends Node {
     
 	/*** create method
 		* Initiates (in some sense instantiates) Event for a specific Customer.
-		@param Dictionary $context
+		@param Context $context
 		@return Array[Event]
 			* Returns array of Events, due to pageVisits
 	**/
@@ -90,6 +90,11 @@ export default class Event extends Node {
 		return [event];
 	}
 
+	/*** addEvents method
+		* Adds all Events that are this instance of Events generates, including repetition and pageVisits
+		@param Context $context
+		@return null
+	 */
 	addEvents(context) {
 		if (this.repetition.enabled && this.repetition.type === "iterative") {
 			const iteratorList = context.getIteratorList();

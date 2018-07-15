@@ -13,7 +13,7 @@ export default class Transition {
 		this.source = src;
 		this.destination = dest;
 		this.probability = probability;
-		this.option = option;
+		this.option = option === undefined ? null : option;
 	}
 	
 	/** trueSourceCondition method

@@ -15,7 +15,7 @@ const safeEval = function(code, context) {
 	const resultKey = "SAFE_EVAL_" + Math.floor(Math.random() * 1000000);
 	sandbox[resultKey] = {};
 	code = resultKey + "=" + code;
-	Object.keys(context).forEach(function (key) {
+	Object.keys(context).forEach(function(key) {
 		/* Transform resources to JavaScript objects so they are accessible through Jinja */
 		if (key === "resources") {
 			sandbox[key] = {};
@@ -37,11 +37,10 @@ const safeEval = function(code, context) {
 	* Interface for parsing and evaluating definitions of the attribute/resource definitions
 	@param String $definition
 		* Definition containing Jinja code
-	@param String $context
-		* Context within which we evaluate the Jinja expression
+	@param Context $context
 	@return String
 		* String with interpretted Jinja expressions
- */
+ **/
 export default function parseDefinition(definition, context) {
 	const sandboxContext = context.getSandboxContext();
 	/* Create context for SafeEval */

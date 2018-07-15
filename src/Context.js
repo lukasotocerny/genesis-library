@@ -40,9 +40,7 @@ export default class Context {
 	}
 
 	getConditionResult() {
-		const result = this.result;
-		this.result = null;
-		return result;
+		return this.result;
 	}
 
 	setIteratorList(list) {

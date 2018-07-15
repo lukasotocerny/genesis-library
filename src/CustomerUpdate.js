@@ -19,7 +19,7 @@ export default class CustomerUpdate extends Node {
 
 	/*** apply method
 		* Updates Customer attributes and ids and creates Event customer_update
-		@param Dictionary $context
+		@param Context $context
 		@return null
 	**/
 	apply(context) {
